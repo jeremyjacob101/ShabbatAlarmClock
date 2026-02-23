@@ -48,8 +48,8 @@ struct AlarmListView: View {
                 }
             }
             .sheet(isPresented: $viewModel.showAddAlarm) {
-                AddAlarmView { time, label, sound in
-                    viewModel.addAlarm(time: time, label: label, sound: sound)
+                AddAlarmView { time, label in
+                    viewModel.addAlarm(time: time, label: label)
                 }
             }
             .alert("Notice", isPresented: $viewModel.showAlert) {

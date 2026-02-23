@@ -5,9 +5,8 @@ struct AddAlarmView: View {
 
     @State private var time = Date()
     @State private var label = "Alarm"
-    @State private var sound: AlarmSound = .alarm
 
-    let onSave: (Date, String, AlarmSound) -> Void
+    let onSave: (Date, String) -> Void
 
     var body: some View {
         NavigationStack {
@@ -27,15 +26,6 @@ struct AddAlarmView: View {
                     TextField("Alarm", text: $label)
                 }
 
-                Section("Sound") {
-                    Picker("Sound", selection: $sound) {
-                        ForEach(AlarmSound.allCases) { option in
-                            Text(option.displayName).tag(option)
-                        }
-                    }
-                    .pickerStyle(.navigationLink)
-                }
-
                 Section {
                     Text("This starter schedules a daily repeating local notification.")
                         .font(.footnote)
@@ -53,7 +43,7 @@ struct AddAlarmView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
-                        onSave(time, label.trimmingCharacters(in: .whitespacesAndNewlines), sound)
+                        onSave(time, label.trimmingCharacters(in: .whitespacesAndNewlines))
                         dismiss()
                     }
                     .fontWeight(.semibold)
@@ -64,5 +54,5 @@ struct AddAlarmView: View {
 }
 
 #Preview {
-    AddAlarmView { _, _, _ in }
+    AddAlarmView { _, _ in }
 }

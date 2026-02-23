@@ -14,6 +14,9 @@ enum NotificationServiceError: LocalizedError {
 
 final class NotificationService {
     private let center = UNUserNotificationCenter.current()
+    private let defaultSoundDirectory = "AlarmSounds"
+    private let defaultSoundFileName = "chimes.wav"
+    private let defaultSoundBaseName = "chimes"
 
     func authorizationStatus() async -> UNAuthorizationStatus {
         await withCheckedContinuation { continuation in
@@ -46,22 +49,22 @@ final class NotificationService {
         content.title = alarm.label.isEmpty ? "Alarm" : alarm.label
         content.body = "It’s \(DateFormatter.alarmTime.string(from: alarm.time))"
         let inSubdirectory = Bundle.main.url(
-            forResource: alarm.sound.rawValue,
+            forResource: defaultSoundBaseName,
             withExtension: "wav",
-            subdirectory: alarm.sound.bundleDirectory
+            subdirectory: defaultSoundDirectory
         ) != nil
         let inRoot = Bundle.main.url(
-            forResource: alarm.sound.rawValue,
+            forResource: defaultSoundBaseName,
             withExtension: "wav"
         ) != nil
 
         if inSubdirectory {
             content.sound = UNNotificationSound(
-                named: UNNotificationSoundName(rawValue: alarm.sound.bundleRelativePath)
+                named: UNNotificationSoundName(rawValue: "\(defaultSoundDirectory)/\(defaultSoundFileName)")
             )
         } else if inRoot {
             content.sound = UNNotificationSound(
-                named: UNNotificationSoundName(rawValue: alarm.sound.resourceFileName)
+                named: UNNotificationSoundName(rawValue: defaultSoundFileName)
             )
         } else {
             content.sound = .default

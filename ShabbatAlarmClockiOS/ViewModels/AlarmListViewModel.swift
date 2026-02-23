@@ -54,11 +54,10 @@ final class AlarmListViewModel: ObservableObject {
         }
     }
 
-    func addAlarm(time: Date, label: String, sound: AlarmSound) {
+    func addAlarm(time: Date, label: String) {
         var newAlarm = Alarm(
             time: time,
             label: label,
-            sound: sound,
             isEnabled: true,
             repeatsDaily: true
         )
