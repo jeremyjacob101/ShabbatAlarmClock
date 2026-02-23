@@ -14,6 +14,10 @@ struct AlarmRowView: View {
                 Text(alarm.label)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+
+                Text(alarm.sound.displayName)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
 
             Spacer()

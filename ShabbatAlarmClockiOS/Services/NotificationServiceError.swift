@@ -45,7 +45,11 @@ final class NotificationService {
         let content = UNMutableNotificationContent()
         content.title = alarm.label.isEmpty ? "Alarm" : alarm.label
         content.body = "It’s \(DateFormatter.alarmTime.string(from: alarm.time))"
-        content.sound = .default
+        if Bundle.main.url(forResource: alarm.sound.rawValue, withExtension: "wav") != nil {
+            content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: alarm.sound.resourceFileName))
+        } else {
+            content.sound = .default
+        }
 
         var components = Calendar.current.dateComponents([.hour, .minute], from: alarm.time)
 

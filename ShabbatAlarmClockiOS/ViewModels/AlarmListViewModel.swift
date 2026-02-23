@@ -54,8 +54,14 @@ final class AlarmListViewModel: ObservableObject {
         }
     }
 
-    func addAlarm(time: Date, label: String) {
-        var newAlarm = Alarm(time: time, label: label, isEnabled: true, repeatsDaily: true)
+    func addAlarm(time: Date, label: String, sound: AlarmSound) {
+        var newAlarm = Alarm(
+            time: time,
+            label: label,
+            sound: sound,
+            isEnabled: true,
+            repeatsDaily: true
+        )
 
         if !(notificationStatus == .authorized || notificationStatus == .provisional) {
             newAlarm.isEnabled = false
