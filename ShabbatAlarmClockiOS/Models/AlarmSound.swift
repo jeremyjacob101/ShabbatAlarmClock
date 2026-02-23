@@ -27,4 +27,12 @@ enum AlarmSound: String, CaseIterable, Codable, Identifiable {
     var resourceFileName: String {
         "\(rawValue).wav"
     }
+
+    var bundleDirectory: String {
+        "AlarmSounds"
+    }
+
+    var bundleRelativePath: String {
+        "\(bundleDirectory)/\(resourceFileName)"
+    }
 }

@@ -45,8 +45,24 @@ final class NotificationService {
         let content = UNMutableNotificationContent()
         content.title = alarm.label.isEmpty ? "Alarm" : alarm.label
         content.body = "It’s \(DateFormatter.alarmTime.string(from: alarm.time))"
-        if Bundle.main.url(forResource: alarm.sound.rawValue, withExtension: "wav") != nil {
-            content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: alarm.sound.resourceFileName))
+        let inSubdirectory = Bundle.main.url(
+            forResource: alarm.sound.rawValue,
+            withExtension: "wav",
+            subdirectory: alarm.sound.bundleDirectory
+        ) != nil
+        let inRoot = Bundle.main.url(
+            forResource: alarm.sound.rawValue,
+            withExtension: "wav"
+        ) != nil
+
+        if inSubdirectory {
+            content.sound = UNNotificationSound(
+                named: UNNotificationSoundName(rawValue: alarm.sound.bundleRelativePath)
+            )
+        } else if inRoot {
+            content.sound = UNNotificationSound(
+                named: UNNotificationSoundName(rawValue: alarm.sound.resourceFileName)
+            )
         } else {
             content.sound = .default
         }
