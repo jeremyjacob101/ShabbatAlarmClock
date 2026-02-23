@@ -63,12 +63,12 @@ final class AlarmListViewModel: ObservableObject {
         }
     }
 
-    func addAlarm(time: Date, label: String) {
+    func addAlarm(time: Date, label: String, weekday: Int) {
         var newAlarm = Alarm(
             time: time,
             label: label,
             isEnabled: true,
-            repeatsDaily: true
+            weekday: weekday
         )
 
         if !(notificationStatus == .authorized || notificationStatus == .provisional) {
@@ -141,6 +141,10 @@ final class AlarmListViewModel: ObservableObject {
     }
 
     private func sortAlarms(_ lhs: Alarm, _ rhs: Alarm) -> Bool {
+        if lhs.weekday != rhs.weekday {
+            return lhs.weekday < rhs.weekday
+        }
+
         let cal = Calendar.current
         let l = cal.dateComponents([.hour, .minute], from: lhs.time)
         let r = cal.dateComponents([.hour, .minute], from: rhs.time)

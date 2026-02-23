@@ -48,9 +48,10 @@ final class NotificationService {
             throw NotificationServiceError.notAuthorized
         }
 
+        let weekdayName = weekdayName(for: alarm.weekday)
         let content = UNMutableNotificationContent()
         content.title = alarm.label.isEmpty ? "Alarm" : alarm.label
-        content.body = "It’s \(DateFormatter.alarmTime.string(from: alarm.time))"
+        content.body = "It’s \(weekdayName) at \(DateFormatter.alarmTime.string(from: alarm.time))"
         let inSubdirectory = Bundle.main.url(
             forResource: defaultSoundBaseName,
             withExtension: "wav",
@@ -84,16 +85,16 @@ final class NotificationService {
                 : .default
         }
 
-        var components = Calendar.current.dateComponents([.hour, .minute], from: alarm.time)
-
-        if !alarm.repeatsDaily {
-            let nextDate = nextOccurrence(for: alarm.time)
-            components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: nextDate)
-        }
+        let timeComponents = Calendar.current.dateComponents([.hour, .minute], from: alarm.time)
+        var components = DateComponents()
+        components.weekday = alarm.weekday
+        components.hour = timeComponents.hour
+        components.minute = timeComponents.minute
+        components.second = 0
 
         let trigger = UNCalendarNotificationTrigger(
             dateMatching: components,
-            repeats: alarm.repeatsDaily
+            repeats: true
         )
 
         let request = UNNotificationRequest(
@@ -121,22 +122,13 @@ final class NotificationService {
         center.removePendingNotificationRequests(withIdentifiers: ids.map(\.uuidString))
     }
 
-    private func nextOccurrence(for time: Date) -> Date {
-        let calendar = Calendar.current
-        let now = Date()
-
-        let hm = calendar.dateComponents([.hour, .minute], from: time)
-        var todayComponents = calendar.dateComponents([.year, .month, .day], from: now)
-        todayComponents.hour = hm.hour
-        todayComponents.minute = hm.minute
-        todayComponents.second = 0
-
-        let todayTarget = calendar.date(from: todayComponents) ?? now
-        if todayTarget > now {
-            return todayTarget
-        } else {
-            return calendar.date(byAdding: .day, value: 1, to: todayTarget) ?? todayTarget
+    private func weekdayName(for weekday: Int) -> String {
+        let symbols = Calendar.current.weekdaySymbols
+        guard (1...symbols.count).contains(weekday) else {
+            return "your selected day"
         }
+
+        return symbols[weekday - 1]
     }
 
     private func notificationSettings() async -> UNNotificationSettings {
