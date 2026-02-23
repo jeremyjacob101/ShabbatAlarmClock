@@ -1,0 +1,50 @@
+# macOS
+.DS_Store
+
+# Xcode build products / user data
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Xcode user-specific files
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xcuserstate
+
+# Xcode workspace user data
+*.xcworkspace/xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods (only if used later)
+Pods/
+
+# Carthage (only if used later)
+Carthage/Build/
+
+# Fastlane (only if used later)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Archives / exports
+*.xcarchive
+ExportOptions.plist
+
+# Env files
+.env
+.env.*
+EOF
