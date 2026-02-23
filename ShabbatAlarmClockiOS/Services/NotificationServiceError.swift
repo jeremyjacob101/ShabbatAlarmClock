@@ -23,15 +23,10 @@ final class NotificationService {
         return settings.authorizationStatus
     }
 
-    func criticalAlertSetting() async -> UNNotificationSetting {
-        let settings = await notificationSettings()
-        return settings.criticalAlertSetting
-    }
-
     @discardableResult
     func requestAuthorization() async throws -> Bool {
         try await withCheckedThrowingContinuation { continuation in
-            center.requestAuthorization(options: [.alert, .sound, .badge, .criticalAlert]) { granted, error in
+            center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
                 if let error {
                     continuation.resume(throwing: error)
                 } else {
@@ -42,8 +37,7 @@ final class NotificationService {
     }
 
     func schedule(alarm: Alarm) async throws {
-        let settings = await notificationSettings()
-        let status = settings.authorizationStatus
+        let status = await authorizationStatus()
         guard status == .authorized || status == .provisional else {
             throw NotificationServiceError.notAuthorized
         }
@@ -65,24 +59,13 @@ final class NotificationService {
         let customSoundName = inSubdirectory
             ? "\(defaultSoundDirectory)/\(defaultSoundFileName)"
             : defaultSoundFileName
-        let canUseCritical = settings.criticalAlertSetting == .enabled
 
         if inSubdirectory || inRoot {
-            if canUseCritical {
-                content.interruptionLevel = .critical
-                content.sound = UNNotificationSound.criticalSoundNamed(
-                    UNNotificationSoundName(rawValue: customSoundName),
-                    withAudioVolume: 1.0
-                )
-            } else {
-                content.sound = UNNotificationSound(
-                    named: UNNotificationSoundName(rawValue: customSoundName)
-                )
-            }
+            content.sound = UNNotificationSound(
+                named: UNNotificationSoundName(rawValue: customSoundName)
+            )
         } else {
-            content.sound = canUseCritical
-                ? .defaultCriticalSound(withAudioVolume: 1.0)
-                : .default
+            content.sound = .default
         }
 
         let timeComponents = Calendar.current.dateComponents([.hour, .minute], from: alarm.time)

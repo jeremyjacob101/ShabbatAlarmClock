@@ -32,7 +32,6 @@ final class AlarmListViewModel: ObservableObject {
 
         Task {
             await refreshNotificationStatus()
-            await rescheduleEnabledAlarmsIfPossible()
         }
     }
 
@@ -48,15 +47,7 @@ final class AlarmListViewModel: ObservableObject {
 
                 if !granted {
                     presentAlert("Notifications were not allowed. You can still save alarms, but they won’t ring until notifications are enabled.")
-                    return
                 }
-
-                let criticalSetting = await notificationService.criticalAlertSetting()
-                if criticalSetting != .enabled {
-                    presentAlert("To play alarms when Ring/Silent is off, Critical Alerts must be enabled for this app (Signing & Capabilities entitlement + Settings > Notifications > ShabbatAlarmClockiOS).")
-                }
-
-                await rescheduleEnabledAlarmsIfPossible()
             } catch {
                 presentAlert("Failed to request notification permission: \(error.localizedDescription)")
             }
@@ -155,15 +146,4 @@ final class AlarmListViewModel: ObservableObject {
         return lMinutes < rMinutes
     }
 
-    private func rescheduleEnabledAlarmsIfPossible() async {
-        guard notificationStatus == .authorized || notificationStatus == .provisional else { return }
-
-        for alarm in alarms where alarm.isEnabled {
-            do {
-                try await notificationService.schedule(alarm: alarm)
-            } catch {
-                handleSchedulingError(for: alarm.id, error: error)
-            }
-        }
-    }
 }
