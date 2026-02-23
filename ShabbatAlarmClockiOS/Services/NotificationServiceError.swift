@@ -19,17 +19,19 @@ final class NotificationService {
     private let defaultSoundBaseName = "chimes"
 
     func authorizationStatus() async -> UNAuthorizationStatus {
-        await withCheckedContinuation { continuation in
-            center.getNotificationSettings { settings in
-                continuation.resume(returning: settings.authorizationStatus)
-            }
-        }
+        let settings = await notificationSettings()
+        return settings.authorizationStatus
+    }
+
+    func criticalAlertSetting() async -> UNNotificationSetting {
+        let settings = await notificationSettings()
+        return settings.criticalAlertSetting
     }
 
     @discardableResult
     func requestAuthorization() async throws -> Bool {
         try await withCheckedThrowingContinuation { continuation in
-            center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            center.requestAuthorization(options: [.alert, .sound, .badge, .criticalAlert]) { granted, error in
                 if let error {
                     continuation.resume(throwing: error)
                 } else {
@@ -40,7 +42,8 @@ final class NotificationService {
     }
 
     func schedule(alarm: Alarm) async throws {
-        let status = await authorizationStatus()
+        let settings = await notificationSettings()
+        let status = settings.authorizationStatus
         guard status == .authorized || status == .provisional else {
             throw NotificationServiceError.notAuthorized
         }
@@ -58,16 +61,27 @@ final class NotificationService {
             withExtension: "wav"
         ) != nil
 
-        if inSubdirectory {
-            content.sound = UNNotificationSound(
-                named: UNNotificationSoundName(rawValue: "\(defaultSoundDirectory)/\(defaultSoundFileName)")
-            )
-        } else if inRoot {
-            content.sound = UNNotificationSound(
-                named: UNNotificationSoundName(rawValue: defaultSoundFileName)
-            )
+        let customSoundName = inSubdirectory
+            ? "\(defaultSoundDirectory)/\(defaultSoundFileName)"
+            : defaultSoundFileName
+        let canUseCritical = settings.criticalAlertSetting == .enabled
+
+        if inSubdirectory || inRoot {
+            if canUseCritical {
+                content.interruptionLevel = .critical
+                content.sound = UNNotificationSound.criticalSoundNamed(
+                    UNNotificationSoundName(rawValue: customSoundName),
+                    withAudioVolume: 1.0
+                )
+            } else {
+                content.sound = UNNotificationSound(
+                    named: UNNotificationSoundName(rawValue: customSoundName)
+                )
+            }
         } else {
-            content.sound = .default
+            content.sound = canUseCritical
+                ? .defaultCriticalSound(withAudioVolume: 1.0)
+                : .default
         }
 
         var components = Calendar.current.dateComponents([.hour, .minute], from: alarm.time)
@@ -122,6 +136,14 @@ final class NotificationService {
             return todayTarget
         } else {
             return calendar.date(byAdding: .day, value: 1, to: todayTarget) ?? todayTarget
+        }
+    }
+
+    private func notificationSettings() async -> UNNotificationSettings {
+        await withCheckedContinuation { continuation in
+            center.getNotificationSettings { settings in
+                continuation.resume(returning: settings)
+            }
         }
     }
 }
