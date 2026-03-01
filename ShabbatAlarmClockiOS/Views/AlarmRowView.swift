@@ -2,6 +2,8 @@ import SwiftUI
 
 struct AlarmRowView: View {
     let alarm: Alarm
+    let themeColor: Color
+    let onEdit: () -> Void
     let onToggle: (Bool) -> Void
 
     private var weekdayName: String {
@@ -14,21 +16,36 @@ struct AlarmRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(DateFormatter.alarmTime.string(from: alarm.time))
-                    .font(.system(size: 34, weight: .medium, design: .rounded))
-                    .monospacedDigit()
+            Button(action: onEdit) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(DateFormatter.alarmTime.string(from: alarm.time))
+                            .font(.system(size: 34, weight: .medium, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(themeColor)
 
-                Text(alarm.label)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                        Text(alarm.label)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
 
-                Text(weekdayName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                        HStack(spacing: 6) {
+                            if alarm.repeatsWeekly {
+                                Image(systemName: "repeat")
+                                    .font(.caption)
+                                    .foregroundStyle(themeColor)
+                            }
+
+                            Text(weekdayName)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Spacer()
+                }
+                .contentShape(Rectangle())
             }
-
-            Spacer()
+            .buttonStyle(.plain)
 
             Toggle("", isOn: Binding(
                 get: { alarm.isEnabled },
@@ -44,6 +61,8 @@ struct AlarmRowView: View {
 #Preview {
     AlarmRowView(
         alarm: Alarm(time: Date(), label: "Shabbat Alarm", isEnabled: true, weekday: 6),
+        themeColor: .blue,
+        onEdit: { },
         onToggle: { _ in }
     )
     .padding()
