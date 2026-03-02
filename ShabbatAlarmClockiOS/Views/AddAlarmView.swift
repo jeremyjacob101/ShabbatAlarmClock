@@ -3,6 +3,7 @@ import SwiftUI
 struct AddAlarmView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
+    @FocusState private var isLabelFieldFocused: Bool
 
     private static func defaultAlarmTime() -> Date {
         Calendar.current.date(
@@ -124,8 +125,19 @@ struct AddAlarmView: View {
 
                 Section("Label") {
                     TextField("Alarm", text: $label)
+                        .focused($isLabelFieldFocused)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            dismissKeyboard()
+                        }
                 }
             }
+            .scrollDismissesKeyboard(.immediately)
+            .background(
+                KeyboardDismissTapInstaller {
+                    dismissKeyboard()
+                }
+            )
             .navigationTitle(isEditing ? "Edit Alarm" : "New Alarm")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -153,21 +165,31 @@ struct AddAlarmView: View {
                 }
             }
             .onChange(of: sound) { _, _ in
+                dismissKeyboard()
                 if isTestingSound {
                     stopSoundPreview()
                 }
             }
             .onChange(of: soundDurationSeconds) { _, _ in
+                dismissKeyboard()
                 if isTestingSound {
                     stopSoundPreview()
                 }
             }
+            .onChange(of: repeatsWeekly) { _, _ in
+                dismissKeyboard()
+            }
+            .onChange(of: weekday) { _, _ in
+                dismissKeyboard()
+            }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase != .active {
+                    dismissKeyboard()
                     stopSoundPreview()
                 }
             }
             .onDisappear {
+                dismissKeyboard()
                 stopSoundPreview()
             }
         }
@@ -195,6 +217,10 @@ struct AddAlarmView: View {
         guard isTestingSound else { return }
         soundPreviewPlayer.stop()
         isTestingSound = false
+    }
+
+    private func dismissKeyboard() {
+        isLabelFieldFocused = false
     }
 }
 

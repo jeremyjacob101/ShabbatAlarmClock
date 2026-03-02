@@ -7,6 +7,7 @@ struct AlarmListView: View {
     @StateObject private var viewModel = AlarmListViewModel()
     @Environment(\.openURL) private var openURL
     @Environment(\.requestReview) private var requestReview
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -123,6 +124,11 @@ struct AlarmListView: View {
             .onAppear {
                 viewModel.onAppear()
             }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    viewModel.onSceneBecameActive()
+                }
+            }
         }
     }
 
@@ -146,7 +152,14 @@ struct AlarmListView: View {
     }
 
     private func contact() {
-        if let emailURL = URL(string: "mailto:jeremyjacob101@gmail.com") {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = "jeremyjacob101@gmail.com"
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "[CONTACT] Shabbat Alarm Clock")
+        ]
+
+        if let emailURL = components.url {
             openURL(emailURL)
         }
     }

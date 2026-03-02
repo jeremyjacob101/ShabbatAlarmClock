@@ -13,6 +13,7 @@ final class AlarmListViewModel: ObservableObject {
 
     private let repository: AlarmRepository
     private let notificationService: NotificationService
+    private var oneTimeAlarmExpirationTask: Task<Void, Never>?
 
     // Main initializer (no default dependency expressions = avoids Swift concurrency warnings)
     init(repository: AlarmRepository, notificationService: NotificationService) {
@@ -31,6 +32,16 @@ final class AlarmListViewModel: ObservableObject {
     func onAppear() {
         alarms = repository.load().sorted(by: sortAlarms)
         reconcileOneTimeAlarms()
+        scheduleNextOneTimeAlarmExpiration()
+
+        Task {
+            await refreshNotificationStatus()
+        }
+    }
+
+    func onSceneBecameActive() {
+        reconcileOneTimeAlarms()
+        scheduleNextOneTimeAlarmExpiration()
 
         Task {
             await refreshNotificationStatus()
@@ -186,6 +197,7 @@ final class AlarmListViewModel: ObservableObject {
 
     private func persist() {
         repository.save(alarms)
+        scheduleNextOneTimeAlarmExpiration()
     }
 
     private func presentAlert(_ message: String) {
@@ -204,6 +216,7 @@ final class AlarmListViewModel: ObservableObject {
                let scheduledDate = alarms[index].scheduledDate,
                scheduledDate <= now {
                 alarms[index].isEnabled = false
+                alarms[index].scheduledDate = nil
                 notificationService.cancel(alarmID: alarms[index].id)
                 didChange = true
             } else if alarms[index].isEnabled,
@@ -216,7 +229,40 @@ final class AlarmListViewModel: ObservableObject {
         if didChange {
             alarms.sort(by: sortAlarms)
             persist()
+        } else {
+            scheduleNextOneTimeAlarmExpiration()
         }
+    }
+
+    private func scheduleNextOneTimeAlarmExpiration() {
+        oneTimeAlarmExpirationTask?.cancel()
+        oneTimeAlarmExpirationTask = nil
+
+        guard let nextFireDate = alarms
+            .filter({ $0.isEnabled && !$0.repeatsWeekly })
+            .compactMap(\.scheduledDate)
+            .min()
+        else {
+            return
+        }
+
+        let delay = max(nextFireDate.timeIntervalSinceNow, 0)
+        let delayNanoseconds = UInt64(delay * 1_000_000_000)
+
+        oneTimeAlarmExpirationTask = Task { [weak self] in
+            if delayNanoseconds > 0 {
+                try? await Task.sleep(nanoseconds: delayNanoseconds)
+            }
+
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                self?.handleOneTimeAlarmExpiration()
+            }
+        }
+    }
+
+    private func handleOneTimeAlarmExpiration() {
+        reconcileOneTimeAlarms()
     }
 
     private func sortAlarms(_ lhs: Alarm, _ rhs: Alarm) -> Bool {

@@ -27,14 +27,18 @@ struct AlarmRowView: View {
                         HStack(spacing: 6) {
                             if alarm.repeatsWeekly {
                                 Image(systemName: "repeat")
-                                    .font(.caption)
+                                    .font(.footnote)
                                     .foregroundStyle(themeColor)
                             }
 
                             Text(weekdayName)
-                                .font(.caption)
+                                .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
+
+                        Text(alarm.label)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
 
                     Spacer()
