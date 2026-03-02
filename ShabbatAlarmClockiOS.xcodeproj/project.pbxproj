@@ -271,7 +271,7 @@
 				DEVELOPMENT_TEAM = UZ7YLA6V9D;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Shabbat Alarm Clock";
+				INFOPLIST_KEY_CFBundleDisplayName = "Shabbat Alarm";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -310,7 +310,7 @@
 				DEVELOPMENT_TEAM = UZ7YLA6V9D;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Shabbat Alarm Clock";
+				INFOPLIST_KEY_CFBundleDisplayName = "Shabbat Alarm";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
