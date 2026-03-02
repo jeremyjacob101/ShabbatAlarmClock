@@ -46,7 +46,9 @@ final class NotificationService {
         let content = UNMutableNotificationContent()
         content.title = alarm.label.isEmpty ? "Alarm" : alarm.label
         content.body = "It’s \(weekdayName) at \(DateFormatter.alarmTime.string(from: alarm.time))"
-        if let customSoundName = alarm.sound.notificationSoundName() {
+        if let customSoundName = alarm.sound.notificationSoundName(
+            durationSeconds: alarm.soundDurationSeconds
+        ) {
             content.sound = UNNotificationSound(
                 named: UNNotificationSoundName(rawValue: customSoundName)
             )

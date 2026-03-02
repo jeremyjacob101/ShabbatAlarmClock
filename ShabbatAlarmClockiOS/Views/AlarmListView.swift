@@ -91,24 +91,26 @@ struct AlarmListView: View {
                 }
             }
             .sheet(isPresented: $viewModel.showAddAlarm) {
-                AddAlarmView { time, label, weekday, sound, repeatsWeekly in
+                AddAlarmView { time, label, weekday, sound, soundDurationSeconds, repeatsWeekly in
                     viewModel.addAlarm(
                         time: time,
                         label: label,
                         weekday: weekday,
                         sound: sound,
+                        soundDurationSeconds: soundDurationSeconds,
                         repeatsWeekly: repeatsWeekly
                     )
                 }
             }
             .sheet(item: $viewModel.editingAlarm) { alarm in
-                AddAlarmView(alarm: alarm) { time, label, weekday, sound, repeatsWeekly in
+                AddAlarmView(alarm: alarm) { time, label, weekday, sound, soundDurationSeconds, repeatsWeekly in
                     viewModel.updateAlarm(
                         id: alarm.id,
                         time: time,
                         label: label,
                         weekday: weekday,
                         sound: sound,
+                        soundDurationSeconds: soundDurationSeconds,
                         repeatsWeekly: repeatsWeekly
                     )
                 }

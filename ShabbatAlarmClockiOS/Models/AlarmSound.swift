@@ -26,20 +26,52 @@ enum AlarmSound: String, CaseIterable, Codable, Identifiable {
         "\(rawValue).wav"
     }
 
-    func bundledFileURL() -> URL? {
+    func bundledFileURL(durationSeconds: Int) -> URL? {
+        if let variantURL = bundleURL(resource: variantResourceName(durationSeconds: durationSeconds)) {
+            return variantURL
+        }
+
+        return bundleURL(resource: rawValue)
+    }
+
+    func notificationSoundName(durationSeconds: Int) -> String? {
+        let variantName = variantFileName(durationSeconds: durationSeconds)
+        if let soundName = notificationSoundName(
+            resource: variantResourceName(durationSeconds: durationSeconds),
+            fileName: variantName
+        ) {
+            return soundName
+        }
+
+        if let soundName = notificationSoundName(resource: rawValue, fileName: fileName) {
+            return soundName
+        }
+
+        return nil
+    }
+
+    private func variantResourceName(durationSeconds: Int) -> String {
+        "\(rawValue)_\(Alarm.clampedSoundDuration(durationSeconds))s"
+    }
+
+    private func variantFileName(durationSeconds: Int) -> String {
+        "\(variantResourceName(durationSeconds: durationSeconds)).wav"
+    }
+
+    private func bundleURL(resource: String) -> URL? {
         Bundle.main.url(
-            forResource: rawValue,
+            forResource: resource,
             withExtension: "wav",
             subdirectory: Self.soundDirectory
         ) ?? Bundle.main.url(
-            forResource: rawValue,
+            forResource: resource,
             withExtension: "wav"
         )
     }
 
-    func notificationSoundName() -> String? {
+    private func notificationSoundName(resource: String, fileName: String) -> String? {
         if Bundle.main.url(
-            forResource: rawValue,
+            forResource: resource,
             withExtension: "wav",
             subdirectory: Self.soundDirectory
         ) != nil {
@@ -47,7 +79,7 @@ enum AlarmSound: String, CaseIterable, Codable, Identifiable {
         }
 
         if Bundle.main.url(
-            forResource: rawValue,
+            forResource: resource,
             withExtension: "wav"
         ) != nil {
             return fileName

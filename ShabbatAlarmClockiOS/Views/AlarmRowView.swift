@@ -18,15 +18,11 @@ struct AlarmRowView: View {
         HStack(spacing: 12) {
             Button(action: onEdit) {
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(DateFormatter.alarmTime.string(from: alarm.time))
                             .font(.system(size: 34, weight: .medium, design: .rounded))
                             .monospacedDigit()
                             .foregroundStyle(themeColor)
-
-                        Text(alarm.label)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
 
                         HStack(spacing: 6) {
                             if alarm.repeatsWeekly {

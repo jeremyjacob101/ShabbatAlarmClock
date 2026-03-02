@@ -17,6 +17,7 @@ struct AddAlarmView: View {
     @State private var label = "Alarm"
     @State private var weekday = 7
     @State private var sound: AlarmSound = .defaultSound
+    @State private var soundDurationSeconds = Alarm.defaultSoundDurationSeconds
     @State private var repeatsWeekly = false
     @State private var isTestingSound = false
 
@@ -24,9 +25,9 @@ struct AddAlarmView: View {
     private let isEditing: Bool
     private let soundPreviewPlayer = AlarmSoundPreviewPlayer.shared
 
-    let onSave: (Date, String, Int, AlarmSound, Bool) -> Void
+    let onSave: (Date, String, Int, AlarmSound, Int, Bool) -> Void
 
-    init(alarm: Alarm? = nil, onSave: @escaping (Date, String, Int, AlarmSound, Bool) -> Void) {
+    init(alarm: Alarm? = nil, onSave: @escaping (Date, String, Int, AlarmSound, Int, Bool) -> Void) {
         let initialAlarm = alarm ?? Alarm(
             time: Self.defaultAlarmTime(),
             weekday: 7,
@@ -38,6 +39,7 @@ struct AddAlarmView: View {
         _label = State(initialValue: initialAlarm.label)
         _weekday = State(initialValue: initialAlarm.weekday)
         _sound = State(initialValue: initialAlarm.sound)
+        _soundDurationSeconds = State(initialValue: initialAlarm.soundDurationSeconds)
         _repeatsWeekly = State(initialValue: initialAlarm.repeatsWeekly)
         isEditing = alarm != nil
         self.onSave = onSave
@@ -72,6 +74,33 @@ struct AddAlarmView: View {
                         ForEach(AlarmSound.allCases) { sound in
                             Text(sound.displayName).tag(sound)
                         }
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Notification Length")
+
+                            Spacer()
+
+                            Text("\(soundDurationSeconds)s")
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Slider(
+                            value: soundDurationSliderBinding,
+                            in: Double(Alarm.soundDurationRange.lowerBound)...Double(Alarm.soundDurationRange.upperBound),
+                            step: 5
+                        )
+
+                        HStack(spacing: 0) {
+                            ForEach(Alarm.supportedSoundDurations, id: \.self) { duration in
+                                Text("\(duration)s")
+                                    .frame(maxWidth: .infinity)
+                            }
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
                 } header: {
                     HStack {
@@ -115,6 +144,7 @@ struct AddAlarmView: View {
                             label.trimmingCharacters(in: .whitespacesAndNewlines),
                             weekday,
                             sound,
+                            soundDurationSeconds,
                             repeatsWeekly
                         )
                         dismiss()
@@ -123,6 +153,11 @@ struct AddAlarmView: View {
                 }
             }
             .onChange(of: sound) { _, _ in
+                if isTestingSound {
+                    stopSoundPreview()
+                }
+            }
+            .onChange(of: soundDurationSeconds) { _, _ in
                 if isTestingSound {
                     stopSoundPreview()
                 }
@@ -143,10 +178,17 @@ struct AddAlarmView: View {
             stopSoundPreview()
         } else {
             isTestingSound = true
-            soundPreviewPlayer.play(sound) {
+            soundPreviewPlayer.play(sound, durationSeconds: soundDurationSeconds) {
                 isTestingSound = false
             }
         }
+    }
+
+    private var soundDurationSliderBinding: Binding<Double> {
+        Binding(
+            get: { Double(soundDurationSeconds) },
+            set: { soundDurationSeconds = Alarm.clampedSoundDuration(Int($0.rounded())) }
+        )
     }
 
     private func stopSoundPreview() {
@@ -157,5 +199,5 @@ struct AddAlarmView: View {
 }
 
 #Preview {
-    AddAlarmView { _, _, _, _, _ in }
+    AddAlarmView { _, _, _, _, _, _ in }
 }

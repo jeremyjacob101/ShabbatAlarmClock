@@ -56,13 +56,21 @@ final class AlarmListViewModel: ObservableObject {
         }
     }
 
-    func addAlarm(time: Date, label: String, weekday: Int, sound: AlarmSound, repeatsWeekly: Bool) {
+    func addAlarm(
+        time: Date,
+        label: String,
+        weekday: Int,
+        sound: AlarmSound,
+        soundDurationSeconds: Int,
+        repeatsWeekly: Bool
+    ) {
         var newAlarm = Alarm(
             time: time,
             label: label,
             isEnabled: true,
             weekday: weekday,
             sound: sound,
+            soundDurationSeconds: soundDurationSeconds,
             repeatsWeekly: repeatsWeekly
         )
 
@@ -100,6 +108,7 @@ final class AlarmListViewModel: ObservableObject {
         label: String,
         weekday: Int,
         sound: AlarmSound,
+        soundDurationSeconds: Int,
         repeatsWeekly: Bool
     ) {
         guard let index = alarms.firstIndex(where: { $0.id == id }) else { return }
@@ -110,6 +119,7 @@ final class AlarmListViewModel: ObservableObject {
         alarms[index].label = label.isEmpty ? "Alarm" : label
         alarms[index].weekday = weekday
         alarms[index].sound = sound
+        alarms[index].soundDurationSeconds = Alarm.clampedSoundDuration(soundDurationSeconds)
         alarms[index].repeatsWeekly = repeatsWeekly
         alarms[index].scheduledDate = repeatsWeekly ? nil : alarms[index].nextTriggerDate()
 

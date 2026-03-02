@@ -1,12 +1,17 @@
 import Foundation
 
 struct Alarm: Identifiable, Codable, Equatable {
+    static let supportedSoundDurations = [5, 10, 15, 20]
+    static let soundDurationRange = supportedSoundDurations.first!...supportedSoundDurations.last!
+    static let defaultSoundDurationSeconds = soundDurationRange.upperBound
+
     let id: UUID
     var time: Date
     var label: String
     var isEnabled: Bool
     var weekday: Int
     var sound: AlarmSound
+    var soundDurationSeconds: Int
     var repeatsWeekly: Bool
     var scheduledDate: Date?
 
@@ -17,6 +22,7 @@ struct Alarm: Identifiable, Codable, Equatable {
         isEnabled: Bool = true,
         weekday: Int = Calendar.current.component(.weekday, from: Date()),
         sound: AlarmSound = .defaultSound,
+        soundDurationSeconds: Int = Alarm.defaultSoundDurationSeconds,
         repeatsWeekly: Bool = true,
         scheduledDate: Date? = nil
     ) {
@@ -26,6 +32,7 @@ struct Alarm: Identifiable, Codable, Equatable {
         self.isEnabled = isEnabled
         self.weekday = Alarm.normalizedWeekday(weekday, fallbackDate: time)
         self.sound = sound
+        self.soundDurationSeconds = Alarm.clampedSoundDuration(soundDurationSeconds)
         self.repeatsWeekly = repeatsWeekly
         self.scheduledDate = repeatsWeekly ? nil : scheduledDate
     }
@@ -37,6 +44,7 @@ struct Alarm: Identifiable, Codable, Equatable {
         case isEnabled
         case weekday
         case sound
+        case soundDurationSeconds
         case repeatsWeekly
         case scheduledDate
     }
@@ -50,6 +58,10 @@ struct Alarm: Identifiable, Codable, Equatable {
         let isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
         let decodedWeekday = try container.decodeIfPresent(Int.self, forKey: .weekday)
         let sound = try container.decodeIfPresent(AlarmSound.self, forKey: .sound) ?? .defaultSound
+        let soundDurationSeconds = try container.decodeIfPresent(
+            Int.self,
+            forKey: .soundDurationSeconds
+        ) ?? Self.defaultSoundDurationSeconds
         let repeatsWeekly = try container.decodeIfPresent(Bool.self, forKey: .repeatsWeekly) ?? true
         let scheduledDate = try container.decodeIfPresent(Date.self, forKey: .scheduledDate)
 
@@ -60,6 +72,7 @@ struct Alarm: Identifiable, Codable, Equatable {
             isEnabled: isEnabled,
             weekday: decodedWeekday ?? Calendar.current.component(.weekday, from: time),
             sound: sound,
+            soundDurationSeconds: soundDurationSeconds,
             repeatsWeekly: repeatsWeekly,
             scheduledDate: scheduledDate
         )
@@ -86,5 +99,13 @@ struct Alarm: Identifiable, Codable, Equatable {
         }
 
         return Calendar.current.component(.weekday, from: fallbackDate)
+    }
+
+    static func clampedSoundDuration(_ value: Int) -> Int {
+        supportedSoundDurations.min {
+            let lhsDistance = (abs($0 - value), $0)
+            let rhsDistance = (abs($1 - value), $1)
+            return lhsDistance < rhsDistance
+        } ?? defaultSoundDurationSeconds
     }
 }
