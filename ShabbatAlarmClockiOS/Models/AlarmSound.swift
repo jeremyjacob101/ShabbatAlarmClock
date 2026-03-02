@@ -5,7 +5,7 @@ enum AlarmSound: String, CaseIterable, Codable, Identifiable {
     case alarm
     case harp
 
-    static let defaultSound: AlarmSound = .chimes
+    static let defaultSound: AlarmSound = .harp
     private static let soundDirectory = "AlarmSounds"
     static let allCases: [AlarmSound] = [.chimes, .alarm, .harp]
 

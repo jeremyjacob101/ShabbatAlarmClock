@@ -62,6 +62,8 @@ struct AlarmListView: View {
                             Label("App Color", systemImage: "paintpalette")
                         }
 
+                        Divider()
+
                         Button {
                             leaveRating()
                         } label: {
