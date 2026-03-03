@@ -113,10 +113,10 @@ struct AddAlarmView: View {
                             toggleSoundPreview()
                         } label: {
                             HStack(spacing: 3) {
-                                Image(systemName: isTestingSound ? "stop.fill" : "play.fill")
-                                Text("Test Sound")
+                                Image(systemName: isTestingSound ? "hat.widebrim.fill" : "play.fill")
+                                Text(isTestingSound ? "Stop Sound" : "Test Sound")
                             }
-                                .font(.footnote.weight(.semibold))
+                            .font(.footnote.weight(.semibold))
                         }
                         .buttonStyle(.plain)
                     }
