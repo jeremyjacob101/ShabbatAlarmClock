@@ -42,9 +42,9 @@ struct AlarmListView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
                         Button {
-                            openRingerSettings()
+                            handleNotificationAction()
                         } label: {
-                            Label("Ringer Settings", systemImage: "bell.badge")
+                            Label(notificationActionTitle, systemImage: "bell.badge")
                         }
 
                         Menu {
@@ -132,7 +132,25 @@ struct AlarmListView: View {
         }
     }
 
-    private func openRingerSettings() {
+    private var notificationActionTitle: String {
+        switch viewModel.notificationStatus {
+        case .notDetermined:
+            return "Enable Notifications"
+        default:
+            return "Notification Settings"
+        }
+    }
+
+    private func handleNotificationAction() {
+        if viewModel.notificationStatus == .notDetermined {
+            viewModel.requestNotificationPermissionIfNeeded()
+            return
+        }
+
+        openNotificationSettings()
+    }
+
+    private func openNotificationSettings() {
         if let notificationSettingsURL = URL(string: UIApplication.openNotificationSettingsURLString) {
             openURL(notificationSettingsURL)
             return

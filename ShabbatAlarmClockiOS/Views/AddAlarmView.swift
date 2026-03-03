@@ -79,7 +79,7 @@ struct AddAlarmView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Notification Length")
+                            Text("Alarm Sound Length")
 
                             Spacer()
 
