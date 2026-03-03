@@ -88,20 +88,11 @@ struct AddAlarmView: View {
                                 .foregroundStyle(.secondary)
                         }
 
-                        Slider(
-                            value: soundDurationSliderBinding,
-                            in: Double(Alarm.soundDurationRange.lowerBound)...Double(Alarm.soundDurationRange.upperBound),
-                            step: 5
+                        DiscreteStepSlider(
+                            value: $soundDurationSeconds,
+                            steps: Alarm.supportedSoundDurations,
+                            accessibilityLabel: "Alarm sound length"
                         )
-
-                        HStack(spacing: 0) {
-                            ForEach(Alarm.supportedSoundDurations, id: \.self) { duration in
-                                Text("\(duration)s")
-                                    .frame(maxWidth: .infinity)
-                            }
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                     }
                 } header: {
                     HStack {
@@ -204,13 +195,6 @@ struct AddAlarmView: View {
                 isTestingSound = false
             }
         }
-    }
-
-    private var soundDurationSliderBinding: Binding<Double> {
-        Binding(
-            get: { Double(soundDurationSeconds) },
-            set: { soundDurationSeconds = Alarm.clampedSoundDuration(Int($0.rounded())) }
-        )
     }
 
     private func stopSoundPreview() {
