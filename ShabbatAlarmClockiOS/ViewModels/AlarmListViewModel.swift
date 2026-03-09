@@ -4,28 +4,55 @@ import Combine
 
 @MainActor
 final class AlarmListViewModel: ObservableObject {
+    struct AlertItem: Identifiable {
+        enum Kind {
+            case notice(message: String)
+            case ringerReminder
+            case notificationPermissionSettings
+        }
+
+        let id = UUID()
+        let kind: Kind
+
+        var isRingerReminder: Bool {
+            if case .ringerReminder = kind {
+                return true
+            }
+
+            return false
+        }
+    }
+
     @Published private(set) var alarms: [Alarm] = []
     @Published var showAddAlarm = false
     @Published var editingAlarm: Alarm?
     @Published var notificationStatus: UNAuthorizationStatus = .notDetermined
-    @Published var alertMessage: String?
-    @Published var showAlert = false
+    @Published var activeAlert: AlertItem?
 
     private let repository: AlarmRepository
     private let notificationService: NotificationService
+    private let reminderPreferences: AlarmRingerReminderPreferences
     private var oneTimeAlarmExpirationTask: Task<Void, Never>?
+    private var pendingAlerts: [AlertItem] = []
+    private var hasEvaluatedLaunchNotificationPrompt = false
 
     // Main initializer (no default dependency expressions = avoids Swift concurrency warnings)
-    init(repository: AlarmRepository, notificationService: NotificationService) {
+    init(
+        repository: AlarmRepository,
+        notificationService: NotificationService,
+        reminderPreferences: AlarmRingerReminderPreferences
+    ) {
         self.repository = repository
         self.notificationService = notificationService
+        self.reminderPreferences = reminderPreferences
     }
 
     // Convenience initializer for normal app usage
     convenience init() {
         self.init(
             repository: AlarmRepository(),
-            notificationService: NotificationService()
+            notificationService: NotificationService(),
+            reminderPreferences: AlarmRingerReminderPreferences()
         )
     }
 
@@ -34,8 +61,9 @@ final class AlarmListViewModel: ObservableObject {
         reconcileOneTimeAlarms()
         scheduleNextOneTimeAlarmExpiration()
 
-        Task {
-            await refreshNotificationStatus()
+        Task { @MainActor in
+            let status = await refreshNotificationStatus()
+            presentLaunchNotificationPromptIfNeeded(status: status)
         }
     }
 
@@ -43,7 +71,7 @@ final class AlarmListViewModel: ObservableObject {
         reconcileOneTimeAlarms()
         scheduleNextOneTimeAlarmExpiration()
 
-        Task {
+        Task { @MainActor in
             await refreshNotificationStatus()
         }
     }
@@ -114,6 +142,7 @@ final class AlarmListViewModel: ObservableObject {
             alarms.append(newAlarm)
             alarms.sort(by: sortAlarms)
             persist()
+            presentRingerReminderIfNeeded()
 
             guard newAlarm.isEnabled else { return }
 
@@ -154,6 +183,7 @@ final class AlarmListViewModel: ObservableObject {
         alarms.sort(by: sortAlarms)
         persist()
         editingAlarm = nil
+        presentRingerReminderIfNeeded()
 
         guard updatedAlarm.isEnabled else { return }
 
@@ -222,6 +252,22 @@ final class AlarmListViewModel: ObservableObject {
         persist()
     }
 
+    func dismissActiveAlert() {
+        activeAlert = nil
+        presentNextAlertIfNeeded()
+    }
+
+    func suppressSaveReminder() {
+        reminderPreferences.suppressSaveReminder()
+
+        if activeAlert?.isRingerReminder == true {
+            activeAlert = nil
+        }
+
+        pendingAlerts.removeAll { $0.isRingerReminder }
+        presentNextAlertIfNeeded()
+    }
+
     private func handleSchedulingError(for alarmID: UUID, error: Error) {
         if let index = alarms.firstIndex(where: { $0.id == alarmID }) {
             alarms[index].isEnabled = false
@@ -236,8 +282,53 @@ final class AlarmListViewModel: ObservableObject {
     }
 
     private func presentAlert(_ message: String) {
-        alertMessage = message
-        showAlert = true
+        enqueueAlert(AlertItem(kind: .notice(message: message)))
+    }
+
+    private func presentLaunchNotificationPromptIfNeeded(status: UNAuthorizationStatus) {
+        guard !hasEvaluatedLaunchNotificationPrompt else { return }
+        hasEvaluatedLaunchNotificationPrompt = true
+
+        guard !isNotificationAuthorized(status) else { return }
+
+        if status == .notDetermined {
+            requestNotificationPermissionIfNeeded()
+            return
+        }
+
+        enqueueAlert(AlertItem(kind: .notificationPermissionSettings))
+    }
+
+    private func presentRingerReminderIfNeeded() {
+        guard reminderPreferences.shouldShowSaveReminder else { return }
+
+        reminderPreferences.markSaveReminderShown()
+        enqueueAlert(AlertItem(kind: .ringerReminder))
+    }
+
+    private func enqueueAlert(_ alert: AlertItem) {
+        if activeAlert == nil {
+            activeAlert = alert
+            return
+        }
+
+        pendingAlerts.append(alert)
+    }
+
+    private func presentNextAlertIfNeeded() {
+        guard activeAlert == nil, !pendingAlerts.isEmpty else { return }
+
+        let nextAlert = pendingAlerts.removeFirst()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            guard self.activeAlert == nil else {
+                self.pendingAlerts.insert(nextAlert, at: 0)
+                return
+            }
+
+            self.activeAlert = nextAlert
+        }
     }
 
     private func reconcileOneTimeAlarms() {
@@ -301,7 +392,7 @@ final class AlarmListViewModel: ObservableObject {
     }
 
     private func isNotificationAuthorized(_ status: UNAuthorizationStatus) -> Bool {
-        status == .authorized || status == .provisional
+        status == .authorized || status == .provisional || status == .ephemeral
     }
 
     private func notificationStatusForScheduling() async -> Result<UNAuthorizationStatus, Error> {

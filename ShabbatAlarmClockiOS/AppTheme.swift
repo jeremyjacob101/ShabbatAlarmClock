@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 
 enum AppTheme: String, CaseIterable, Identifiable {
+    case black
     case blue
     case teal
     case green
@@ -16,8 +17,18 @@ enum AppTheme: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    static func resolve(storedValue: String) -> AppTheme {
+        if storedValue == "white" {
+            return .black
+        }
+
+        return AppTheme(rawValue: storedValue) ?? .defaultTheme
+    }
+
     var displayName: String {
         switch self {
+        case .black:
+            return "Black"
         case .blue:
             return "Blue"
         case .teal:
@@ -48,6 +59,8 @@ enum AppTheme: String, CaseIterable, Identifiable {
 
     private var uiColor: UIColor {
         switch self {
+        case .black:
+            return UIColor(white: 0.08, alpha: 1.0)
         case .blue:
             return .systemBlue
         case .teal:
@@ -79,7 +92,8 @@ enum AppTheme: String, CaseIterable, Identifiable {
             if isSelected {
                 let ringRect = CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5)
                 let ringPath = UIBezierPath(ovalIn: ringRect)
-                UIColor.white.withAlphaComponent(0.85).setStroke()
+                let ringColor = UIColor.white.withAlphaComponent(0.85)
+                ringColor.setStroke()
                 ringPath.lineWidth = 1
                 ringPath.stroke()
             }
@@ -87,7 +101,10 @@ enum AppTheme: String, CaseIterable, Identifiable {
             uiColor.setFill()
             path.fill()
 
-            UIColor.black.withAlphaComponent(0.18).setStroke()
+            let borderColor = self == .black
+                ? UIColor.white.withAlphaComponent(0.28)
+                : UIColor.black.withAlphaComponent(0.18)
+            borderColor.setStroke()
             path.lineWidth = 0.75
             path.stroke()
         }

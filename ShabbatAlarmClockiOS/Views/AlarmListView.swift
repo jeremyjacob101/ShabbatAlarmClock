@@ -116,10 +116,40 @@ struct AlarmListView: View {
                     )
                 }
             }
-            .alert("Notice", isPresented: $viewModel.showAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(viewModel.alertMessage ?? "")
+            .alert(item: $viewModel.activeAlert) { alert in
+                switch alert.kind {
+                case .notice(let message):
+                    Alert(
+                        title: Text("Notice"),
+                        message: Text(message),
+                        dismissButton: .default(Text("OK")) {
+                            viewModel.dismissActiveAlert()
+                        }
+                    )
+                case .notificationPermissionSettings:
+                    Alert(
+                        title: Text(AppAlertContent.notificationPermissionTitle),
+                        message: Text(AppAlertContent.notificationPermissionMessage),
+                        primaryButton: .default(Text("Open Settings")) {
+                            viewModel.dismissActiveAlert()
+                            openNotificationSettings()
+                        },
+                        secondaryButton: .cancel(Text("Not Now")) {
+                            viewModel.dismissActiveAlert()
+                        }
+                    )
+                case .ringerReminder:
+                    Alert(
+                        title: Text(AppAlertContent.ringerReminderTitle),
+                        message: Text(AppAlertContent.ringerReminderMessage),
+                        primaryButton: .default(Text("Don't Show Again")) {
+                            viewModel.suppressSaveReminder()
+                        },
+                        secondaryButton: .default(Text("Okay")) {
+                            viewModel.dismissActiveAlert()
+                        }
+                    )
+                }
             }
             .onAppear {
                 viewModel.onAppear()

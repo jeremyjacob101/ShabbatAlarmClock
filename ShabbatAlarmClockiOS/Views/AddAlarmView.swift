@@ -1,7 +1,18 @@
 import SwiftUI
+import UIKit
+import UserNotifications
 
 struct AddAlarmView: View {
+    private enum AlertItem: String, Identifiable {
+        case notificationPermissionIntro
+        case notificationPermissionSettings
+        case ringerReminder
+
+        var id: String { rawValue }
+    }
+
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @FocusState private var isLabelFieldFocused: Bool
 
@@ -21,9 +32,12 @@ struct AddAlarmView: View {
     @State private var soundDurationSeconds = Alarm.defaultSoundDurationSeconds
     @State private var repeatsWeekly = false
     @State private var isTestingSound = false
+    @State private var activeAlert: AlertItem?
 
     private let calendar = Calendar.current
     private let isEditing: Bool
+    private let notificationService = NotificationService()
+    private let reminderPreferences = AlarmRingerReminderPreferences()
     private let soundPreviewPlayer = AlarmSoundPreviewPlayer.shared
 
     let onSave: (Date, String, Int, AlarmSound, Int, Bool) -> Void
@@ -101,7 +115,7 @@ struct AddAlarmView: View {
                         Spacer()
 
                         Button {
-                            toggleSoundPreview()
+                            handleTestSoundButtonTap()
                         } label: {
                             HStack(spacing: 3) {
                                 Image(systemName: isTestingSound ? "hat.widebrim.fill" : "play.fill")
@@ -129,6 +143,36 @@ struct AddAlarmView: View {
                     dismissKeyboard()
                 }
             )
+            .alert(item: $activeAlert) { alert in
+                switch alert {
+                case .notificationPermissionIntro:
+                    Alert(
+                        title: Text(AppAlertContent.notificationPermissionTitle),
+                        message: Text(AppAlertContent.notificationPermissionMessage),
+                        primaryButton: .default(Text("Allow")) {
+                            requestNotificationPermissionForTestSound()
+                        },
+                        secondaryButton: .cancel(Text("Not Now"))
+                    )
+                case .notificationPermissionSettings:
+                    Alert(
+                        title: Text(AppAlertContent.notificationPermissionTitle),
+                        message: Text(AppAlertContent.notificationPermissionMessage),
+                        primaryButton: .default(Text("Open Settings")) {
+                            openNotificationSettings()
+                        },
+                        secondaryButton: .cancel(Text("Not Now"))
+                    )
+                case .ringerReminder:
+                    Alert(
+                        title: Text(AppAlertContent.ringerReminderTitle),
+                        message: Text(AppAlertContent.ringerReminderMessage),
+                        dismissButton: .default(Text("OK")) {
+                            startSoundPreview()
+                        }
+                    )
+                }
+            }
             .navigationTitle(isEditing ? "Edit Alarm" : "New Alarm")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -186,14 +230,60 @@ struct AddAlarmView: View {
         }
     }
 
-    private func toggleSoundPreview() {
+    private func handleTestSoundButtonTap() {
+        dismissKeyboard()
+
         if isTestingSound {
             stopSoundPreview()
-        } else {
-            isTestingSound = true
-            soundPreviewPlayer.play(sound, durationSeconds: soundDurationSeconds) {
-                isTestingSound = false
+            return
+        }
+
+        Task { @MainActor in
+            let status = await notificationService.authorizationStatus()
+
+            if isNotificationAuthorized(status) {
+                presentRingerReminderIfNeeded()
+                return
             }
+
+            activeAlert = status == .notDetermined
+                ? .notificationPermissionIntro
+                : .notificationPermissionSettings
+        }
+    }
+
+    private func requestNotificationPermissionForTestSound() {
+        Task { @MainActor in
+            do {
+                let granted = try await notificationService.requestAuthorization()
+                let status = await notificationService.authorizationStatus()
+
+                guard granted, isNotificationAuthorized(status) else {
+                    activeAlert = .notificationPermissionSettings
+                    return
+                }
+
+                presentRingerReminderIfNeeded()
+            } catch {
+                activeAlert = .notificationPermissionSettings
+            }
+        }
+    }
+
+    private func presentRingerReminderIfNeeded() {
+        if !reminderPreferences.shouldShowTestSoundReminder() {
+            startSoundPreview()
+            return
+        }
+
+        reminderPreferences.markTestSoundReminderShown()
+        activeAlert = .ringerReminder
+    }
+
+    private func startSoundPreview() {
+        isTestingSound = true
+        soundPreviewPlayer.play(sound, durationSeconds: soundDurationSeconds) {
+            isTestingSound = false
         }
     }
 
@@ -201,6 +291,21 @@ struct AddAlarmView: View {
         guard isTestingSound else { return }
         soundPreviewPlayer.stop()
         isTestingSound = false
+    }
+
+    private func openNotificationSettings() {
+        if let notificationSettingsURL = URL(string: UIApplication.openNotificationSettingsURLString) {
+            openURL(notificationSettingsURL)
+            return
+        }
+
+        if let appSettingsURL = URL(string: UIApplication.openSettingsURLString) {
+            openURL(appSettingsURL)
+        }
+    }
+
+    private func isNotificationAuthorized(_ status: UNAuthorizationStatus) -> Bool {
+        status == .authorized || status == .provisional || status == .ephemeral
     }
 
     private func dismissKeyboard() {

@@ -5,7 +5,7 @@ struct ContentView: View {
 
     private var selectedTheme: Binding<AppTheme> {
         Binding(
-            get: { AppTheme(rawValue: storedTheme) ?? .defaultTheme },
+            get: { AppTheme.resolve(storedValue: storedTheme) },
             set: { storedTheme = $0.rawValue }
         )
     }
