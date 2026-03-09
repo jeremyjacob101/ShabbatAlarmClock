@@ -3,7 +3,7 @@ import Foundation
 struct Alarm: Identifiable, Codable, Equatable {
     static let supportedSoundDurations = [5, 10, 15, 20]
     static let soundDurationRange = supportedSoundDurations.first!...supportedSoundDurations.last!
-    static let defaultSoundDurationSeconds = soundDurationRange.upperBound
+    static let defaultSoundDurationSeconds = supportedSoundDurations[supportedSoundDurations.count / 2]
 
     let id: UUID
     var time: Date

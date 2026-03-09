@@ -33,7 +33,8 @@ struct DiscreteStepSlider: View {
 
             TickMarkRow(
                 steps: steps,
-                stepPositions: stepPositions
+                stepPositions: stepPositions,
+                selectedStep: value
             )
             .frame(height: 36)
         }
@@ -74,7 +75,8 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
         slider.steps = steps
         slider.isContinuous = true
         slider.accessibilityLabel = accessibilityLabel
-        slider.setValue(Float(clampedStep(for: value)), animated: false)
+        slider.updateAccessibilityValue(with: clampedStep(for: value))
+        slider.setValue(sliderValue(for: value), animated: false)
         slider.addTarget(
             context.coordinator,
             action: #selector(Coordinator.prepareHaptics),
@@ -89,7 +91,7 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
             context.coordinator.updateStepPositions(positions)
         }
 
-        context.coordinator.lastStep = clampedStep(for: value)
+        context.coordinator.lastStepIndex = stepIndex(for: value)
         slider.reportStepPositions()
         return slider
     }
@@ -100,11 +102,14 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
         uiView.accessibilityLabel = accessibilityLabel
 
         let snappedValue = clampedStep(for: value)
-        if uiView.value != Float(snappedValue) {
-            uiView.setValue(Float(snappedValue), animated: false)
+        let snappedSliderValue = sliderValue(for: snappedValue)
+        uiView.updateAccessibilityValue(with: snappedValue)
+
+        if uiView.value != snappedSliderValue {
+            uiView.setValue(snappedSliderValue, animated: false)
         }
 
-        context.coordinator.lastStep = snappedValue
+        context.coordinator.lastStepIndex = stepIndex(for: snappedValue)
         uiView.reportStepPositions()
     }
 
@@ -116,9 +121,23 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
         } ?? rawValue
     }
 
+    private func stepIndex(for stepValue: Int) -> Int {
+        guard let index = steps.firstIndex(of: clampedStep(for: stepValue)) else { return 0 }
+        return index
+    }
+
+    private func stepIndex(forSliderValue sliderValue: Float) -> Int {
+        let roundedIndex = Int(sliderValue.rounded())
+        return min(max(roundedIndex, 0), max(steps.count - 1, 0))
+    }
+
+    private func sliderValue(for stepValue: Int) -> Float {
+        Float(stepIndex(for: stepValue))
+    }
+
     final class Coordinator: NSObject {
         var parent: NativeDiscreteSlider
-        var lastStep: Int?
+        var lastStepIndex: Int?
 
         private let haptics = SnapHapticController()
 
@@ -131,20 +150,24 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
         }
 
         @objc func handleValueChanged(_ slider: StepTrackingSlider) {
-            let snappedValue = parent.clampedStep(for: Int(slider.value.rounded()))
+            let snappedIndex = parent.stepIndex(forSliderValue: slider.value)
+            let snappedValue = parent.steps[snappedIndex]
+            let snappedSliderValue = slider.sliderValue(forStepIndex: snappedIndex)
 
-            if slider.value != Float(snappedValue) {
-                slider.setValue(Float(snappedValue), animated: false)
+            if slider.value != snappedSliderValue {
+                slider.setValue(snappedSliderValue, animated: false)
             }
 
-            if lastStep != snappedValue {
-                if lastStep != nil {
+            slider.updateAccessibilityValue(with: snappedValue)
+
+            if lastStepIndex != snappedIndex {
+                if lastStepIndex != nil {
                     haptics.emit()
                 } else {
                     haptics.prepare()
                 }
 
-                lastStep = snappedValue
+                lastStepIndex = snappedIndex
             }
 
             if parent.value != snappedValue {
@@ -167,10 +190,11 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
 }
 
 private final class StepTrackingSlider: UISlider {
+    private let endpointStepPadding: Float = 0.25
+
     var steps: [Int] = [0] {
         didSet {
-            minimumValue = Float(steps.first ?? 0)
-            maximumValue = Float(steps.last ?? 0)
+            updateRange()
         }
     }
 
@@ -178,12 +202,12 @@ private final class StepTrackingSlider: UISlider {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        minimumValue = 0
-        maximumValue = 0
+        updateRange()
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
+        updateRange()
     }
 
     override func layoutSubviews() {
@@ -191,34 +215,60 @@ private final class StepTrackingSlider: UISlider {
         reportStepPositions()
     }
 
+    func sliderValue(forStepIndex index: Int) -> Float {
+        Float(min(max(index, 0), max(steps.count - 1, 0)))
+    }
+
+    func updateAccessibilityValue(with stepValue: Int) {
+        accessibilityValue = "\(stepValue) seconds"
+    }
+
     func reportStepPositions() {
         let track = trackRect(forBounds: bounds)
-        let positions = steps.map { step in
-            thumbRect(forBounds: bounds, trackRect: track, value: Float(step)).midX
+        let positions = steps.indices.map { index in
+            thumbRect(
+                forBounds: bounds,
+                trackRect: track,
+                value: sliderValue(forStepIndex: index)
+            ).midX
         }
 
         onStepPositionsChanged?(positions)
+    }
+
+    private func updateRange() {
+        guard steps.count > 1 else {
+            minimumValue = 0
+            maximumValue = 0
+            return
+        }
+
+        minimumValue = -endpointStepPadding
+        maximumValue = Float(steps.count - 1) + endpointStepPadding
     }
 }
 
 private struct TickMarkRow: View {
     let steps: [Int]
     let stepPositions: [CGFloat]
+    let selectedStep: Int
 
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .topLeading) {
                 ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                    let isReached = step <= selectedStep
+
                     VStack(spacing: 4) {
                         Capsule()
-                            .fill(Color.accentColor)
+                            .fill(isReached ? Color.accentColor : Color.secondary.opacity(0.28))
                             .frame(width: 3, height: 10)
 
                         Text("\(step)s")
                             .monospacedDigit()
                     }
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(isReached ? Color.accentColor : Color.secondary)
                     .position(
                         x: position(for: index, width: geometry.size.width),
                         y: geometry.size.height / 2
