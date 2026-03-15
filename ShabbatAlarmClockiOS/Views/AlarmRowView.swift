@@ -30,7 +30,12 @@ struct AlarmRowView: View {
                 alarmToggle
             }
         }
+        .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+        .alignmentGuide(.listRowSeparatorTrailing) { dimensions in
+            dimensions.width
+        }
         .opacity(alarm.isEnabled ? 1.0 : 0.5)
         .environment(\.layoutDirection, fixedScreenOrderLayoutDirection)
         .id("\(alarm.id.uuidString)-\(localization.language.rawValue)")
