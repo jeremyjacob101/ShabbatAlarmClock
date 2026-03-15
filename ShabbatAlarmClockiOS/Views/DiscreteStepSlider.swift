@@ -190,8 +190,7 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
 }
 
 private final class StepTrackingSlider: UISlider {
-    private let endpointStepPadding: Float = 0
-    private let horizontalTrackInset: CGFloat = 10
+    private let endpointStepPadding: Float = 0.001
 
     var steps: [Int] = [0] {
         didSet {
@@ -215,11 +214,6 @@ private final class StepTrackingSlider: UISlider {
         super.layoutSubviews()
         reportStepPositions()
     }
-
-    override func trackRect(forBounds bounds: CGRect) -> CGRect {
-        super.trackRect(forBounds: bounds).insetBy(dx: horizontalTrackInset, dy: 0)
-    }
-
     func sliderValue(forStepIndex index: Int) -> Float {
         Float(min(max(index, 0), max(steps.count - 1, 0)))
     }
