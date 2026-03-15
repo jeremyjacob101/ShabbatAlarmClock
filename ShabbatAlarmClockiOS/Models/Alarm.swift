@@ -18,7 +18,7 @@ struct Alarm: Identifiable, Codable, Equatable {
     init(
         id: UUID = UUID(),
         time: Date,
-        label: String = "Alarm",
+        label: String = AppStrings.current.defaultAlarmLabel,
         isEnabled: Bool = true,
         weekday: Int = Calendar.current.component(.weekday, from: Date()),
         sound: AlarmSound = .defaultSound,
@@ -28,7 +28,7 @@ struct Alarm: Identifiable, Codable, Equatable {
     ) {
         self.id = id
         self.time = time
-        self.label = label.isEmpty ? "Alarm" : label
+        self.label = AppStrings.current.normalizedAlarmLabelInput(label)
         self.isEnabled = isEnabled
         self.weekday = Alarm.normalizedWeekday(weekday, fallbackDate: time)
         self.sound = sound

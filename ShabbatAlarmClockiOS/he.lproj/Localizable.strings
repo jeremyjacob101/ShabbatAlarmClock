@@ -1,0 +1,84 @@
+"alarm.default_label" = "שעון מעורר";
+"alarm.add" = "הוספת שעון מעורר";
+"alarm.edit.title" = "עריכת שעון מעורר";
+"alarm.new.title" = "שעון מעורר חדש";
+
+"alarms.title" = "שעוני מעורר";
+"alarms.empty.title" = "עדיין אין שעוני מעורר";
+"alarms.empty.message" = "הקשו על + כדי ליצור את השעון המעורר הראשון.";
+
+"settings.title" = "הגדרות";
+"settings.notifications.enable" = "הפעלת התראות";
+"settings.notifications.manage" = "הגדרות התראות";
+"settings.app_color" = "צבע האפליקציה";
+"settings.language" = "שפה";
+"settings.language.option.system" = "ברירת המחדל של המערכת";
+"settings.language.option.english" = "אנגלית";
+"settings.language.option.hebrew" = "עברית";
+"settings.leave_rating" = "דרגו את האפליקציה";
+"settings.contact" = "יצירת קשר";
+
+"notice.title" = "הודעה";
+
+"button.open_settings" = "פתחו הגדרות";
+"button.allow" = "אפשרו";
+"button.not_now" = "לא עכשיו";
+"button.cancel" = "ביטול";
+"button.save" = "שמירה";
+"button.ok" = "אישור";
+"button.okay" = "בסדר";
+"button.dont_show_again" = "אל תציגו שוב";
+
+"schedule.section" = "תזמון";
+"schedule.day_of_week" = "יום בשבוע";
+"schedule.time" = "שעת השעון המעורר";
+
+"repeat.section" = "חזרה";
+"repeat.every_week" = "חזרה כל שבוע";
+
+"sound.section" = "צליל";
+"sound.alarm" = "צליל השעון המעורר";
+"sound.length" = "משך צליל השעון המעורר";
+"sound.test" = "בדיקת צליל";
+"sound.stop" = "עצירת צליל";
+"sound.accessibility.length" = "משך צליל השעון המעורר";
+"sound.name.chimes" = "פעמונים";
+"sound.name.alarm" = "שעון מעורר";
+"sound.name.harp" = "נבל";
+
+"label.section" = "תווית";
+
+"weekday.unknown" = "יום לא ידוע";
+"weekday.selected_fallback" = "היום שבחרתם";
+
+"alerts.notifications.title" = "הפעלת התראות";
+"alerts.notifications.message" = "Shabbat Alarm Clock משתמשת בהתראות כדי להפעיל שעוני מעורר בזמן שנקבע. הפעילו התראות עכשיו כדי שהשעוני המעורר יצלצלו.";
+"alerts.notifications.request_failed" = "לא ניתן היה לבקש הרשאת התראות. בדקו את ההגדרות ונסו שוב.";
+"alerts.notifications.not_allowed" = "לא אושרו התראות. עדיין אפשר לשמור שעוני מעורר, אבל הם לא יצלצלו עד שההתראות יופעלו.";
+"alerts.notifications.saved_but_disabled" = "השעון המעורר נשמר, אבל ההתראות לא מופעלות. הפעילו אותן בהגדרות כדי להפעיל שעוני מעורר.";
+"alerts.notifications.saved_but_request_failed" = "השעון המעורר נשמר, אבל לא ניתן היה לבקש הרשאת התראות. בדקו את ההגדרות כדי להפעיל שעוני מעורר.";
+"alerts.notifications.disabled_for_enable" = "ההתראות לא מופעלות. הפעילו אותן בהגדרות כדי להפעיל שעוני מעורר.";
+"alerts.notifications.enable_failed" = "לא ניתן היה להפעיל את השעון המעורר כי לא ניתן היה לבקש הרשאת התראות. בדקו את ההגדרות ונסו שוב.";
+"alerts.notifications.schedule_failed" = "לא ניתן היה לתזמן את השעון המעורר. בדקו את הגדרות ההתראות ונסו שוב.";
+
+"alerts.ringer.title" = "הצלצול חייב להיות פעיל";
+"alerts.ringer.message" = "הפעילו את הצלצול כדי לשמוע את השעון המעורר הזה.";
+
+"errors.notifications.not_authorized" = "ההתראות לא מורשות. הפעילו אותן בהגדרות.";
+"errors.notifications.invalid_trigger_date" = "לא ניתן לקבוע את הזמן הבא לשעון המעורר הזה.";
+
+"theme.black" = "שחור";
+"theme.blue" = "כחול";
+"theme.teal" = "טורקיז";
+"theme.green" = "ירוק";
+"theme.mint" = "מנטה";
+"theme.orange" = "כתום";
+"theme.rose" = "ורוד";
+"theme.red" = "אדום";
+"theme.lavender" = "לבנדר";
+
+"duration.short" = "%d שנ׳";
+"duration.accessibility" = "%d שניות";
+"notification.body" = "%@ בשעה %@";
+
+"contact.email.subject" = "[יצירת קשר] Shabbat Alarm Clock";

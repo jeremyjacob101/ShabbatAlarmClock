@@ -25,27 +25,31 @@ enum AppTheme: String, CaseIterable, Identifiable {
         return AppTheme(rawValue: storedValue) ?? .defaultTheme
     }
 
-    var displayName: String {
+    var localizationKey: String {
         switch self {
         case .black:
-            return "Black"
+            return "theme.black"
         case .blue:
-            return "Blue"
+            return "theme.blue"
         case .teal:
-            return "Teal"
+            return "theme.teal"
         case .green:
-            return "Green"
+            return "theme.green"
         case .mint:
-            return "Mint"
+            return "theme.mint"
         case .orange:
-            return "Orange"
+            return "theme.orange"
         case .rose:
-            return "Rose"
+            return "theme.rose"
         case .red:
-            return "Red"
+            return "theme.red"
         case .lavender:
-            return "Lavender"
+            return "theme.lavender"
         }
+    }
+
+    func displayName(in language: AppLanguage = AppLanguagePreferenceStore.currentLanguage()) -> String {
+        AppStrings(language: language).themeDisplayName(self)
     }
 
     var color: Color {

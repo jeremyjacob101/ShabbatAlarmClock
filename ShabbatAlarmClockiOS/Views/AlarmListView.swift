@@ -3,20 +3,33 @@ import StoreKit
 import UIKit
 
 struct AlarmListView: View {
+    @EnvironmentObject private var localization: AppLocalizationController
     @Binding var selectedTheme: AppTheme
     @StateObject private var viewModel = AlarmListViewModel()
     @Environment(\.openURL) private var openURL
     @Environment(\.requestReview) private var requestReview
     @Environment(\.scenePhase) private var scenePhase
 
+    private var strings: AppStrings {
+        localization.strings
+    }
+
+    private var settingsPlacement: ToolbarItemPlacement {
+        localization.layoutDirection == .rightToLeft ? .topBarTrailing : .topBarLeading
+    }
+
+    private var addPlacement: ToolbarItemPlacement {
+        localization.layoutDirection == .rightToLeft ? .topBarLeading : .topBarTrailing
+    }
+
     var body: some View {
         NavigationStack {
             Group {
                 if viewModel.alarms.isEmpty {
                     ContentUnavailableView(
-                        "No Alarms Yet",
+                        strings.alarmsEmptyTitle,
                         systemImage: "alarm",
-                        description: Text("Tap + to create your first alarm.")
+                        description: Text(strings.alarmsEmptyMessage)
                     )
                 } else {
                     List {
@@ -35,16 +48,38 @@ struct AlarmListView: View {
                         .onDelete(perform: viewModel.deleteAlarms)
                     }
                     .listStyle(.insetGrouped)
+                    .environment(\.layoutDirection, localization.layoutDirection)
+                    .id("alarm-list-\(localization.language.rawValue)")
                 }
             }
-            .navigationTitle("Alarms")
+            .navigationTitle(strings.alarmsTitle)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: settingsPlacement) {
                     Menu {
                         Button {
                             handleNotificationAction()
                         } label: {
                             Label(notificationActionTitle, systemImage: "bell.badge")
+                        }
+
+                        Divider()
+
+                        Menu {
+                            ForEach(AppLanguageSelection.allCases) { selection in
+                                Button {
+                                    localization.updateSelection(selection)
+                                } label: {
+                                    HStack {
+                                        Text(strings.languageSelectionTitle(selection))
+                                        Spacer()
+                                        if localization.selection == selection {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                            }
+                        } label: {
+                            Label(strings.languageMenuTitle, systemImage: "globe")
                         }
 
                         Menu {
@@ -53,14 +88,14 @@ struct AlarmListView: View {
                                     selectedTheme = theme
                                 } label: {
                                     Label {
-                                        Text(theme.displayName)
+                                        Text(theme.displayName(in: localization.language))
                                     } icon: {
                                         theme.menuSwatch(isSelected: selectedTheme == theme)
                                     }
                                 }
                             }
                         } label: {
-                            Label("App Color", systemImage: "paintpalette")
+                            Label(strings.appColor, systemImage: "paintpalette")
                         }
 
                         Divider()
@@ -68,27 +103,27 @@ struct AlarmListView: View {
                         Button {
                             leaveRating()
                         } label: {
-                            Label("Leave a Rating", systemImage: "star")
+                            Label(strings.leaveRating, systemImage: "star")
                         }
 
                         Button {
                             contact()
                         } label: {
-                            Label("Contact", systemImage: "envelope")
+                            Label(strings.contact, systemImage: "envelope")
                         }
                     } label: {
                         Image(systemName: "gearshape")
                     }
-                    .accessibilityLabel("Settings")
+                    .accessibilityLabel(strings.settingsTitle)
                 }
 
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: addPlacement) {
                     Button {
                         viewModel.showAddAlarm = true
                     } label: {
                         Image(systemName: "plus")
                     }
-                    .accessibilityLabel("Add alarm")
+                    .accessibilityLabel(strings.addAlarmAccessibilityLabel)
                 }
             }
             .sheet(isPresented: $viewModel.showAddAlarm) {
@@ -120,9 +155,9 @@ struct AlarmListView: View {
                 switch alert.kind {
                 case .notice(let message):
                     Alert(
-                        title: Text("Notice"),
+                        title: Text(strings.noticeTitle),
                         message: Text(message),
-                        dismissButton: .default(Text("OK")) {
+                        dismissButton: .default(Text(strings.ok)) {
                             viewModel.dismissActiveAlert()
                         }
                     )
@@ -130,11 +165,11 @@ struct AlarmListView: View {
                     Alert(
                         title: Text(AppAlertContent.notificationPermissionTitle),
                         message: Text(AppAlertContent.notificationPermissionMessage),
-                        primaryButton: .default(Text("Open Settings")) {
+                        primaryButton: .default(Text(strings.openSettings)) {
                             viewModel.dismissActiveAlert()
                             openNotificationSettings()
                         },
-                        secondaryButton: .cancel(Text("Not Now")) {
+                        secondaryButton: .cancel(Text(strings.notNow)) {
                             viewModel.dismissActiveAlert()
                         }
                     )
@@ -142,20 +177,25 @@ struct AlarmListView: View {
                     Alert(
                         title: Text(AppAlertContent.ringerReminderTitle),
                         message: Text(AppAlertContent.ringerReminderMessage),
-                        primaryButton: .default(Text("Don't Show Again")) {
+                        primaryButton: .default(Text(strings.dontShowAgain)) {
                             viewModel.suppressSaveReminder()
                         },
-                        secondaryButton: .default(Text("Okay")) {
+                        secondaryButton: .default(Text(strings.okay)) {
                             viewModel.dismissActiveAlert()
                         }
                     )
                 }
             }
             .onAppear {
+                localization.refreshSystemLanguageIfNeeded()
                 viewModel.onAppear()
+            }
+            .onChange(of: localization.language) { _, _ in
+                viewModel.handleAppLanguageChange()
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
+                    localization.refreshSystemLanguageIfNeeded()
                     viewModel.onSceneBecameActive()
                 }
             }
@@ -165,9 +205,9 @@ struct AlarmListView: View {
     private var notificationActionTitle: String {
         switch viewModel.notificationStatus {
         case .notDetermined:
-            return "Enable Notifications"
+            return strings.enableNotifications
         default:
-            return "Notification Settings"
+            return strings.notificationSettings
         }
     }
 
@@ -204,7 +244,7 @@ struct AlarmListView: View {
         components.scheme = "mailto"
         components.path = "jeremyjacob101@gmail.com"
         components.queryItems = [
-            URLQueryItem(name: "subject", value: "[CONTACT] Shabbat Alarm Clock")
+            URLQueryItem(name: "subject", value: strings.contactEmailSubject)
         ]
 
         if let emailURL = components.url {
@@ -215,4 +255,5 @@ struct AlarmListView: View {
 
 #Preview {
     AlarmListView(selectedTheme: .constant(.blue))
+        .environmentObject(AppLocalizationController())
 }

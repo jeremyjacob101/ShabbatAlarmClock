@@ -6,11 +6,13 @@ enum NotificationServiceError: LocalizedError {
     case invalidTriggerDate
 
     var errorDescription: String? {
+        let strings = AppStrings.current
+
         switch self {
         case .notAuthorized:
-            return "Notifications are not authorized. Please enable them in Settings."
+            return strings.notificationNotAuthorizedError
         case .invalidTriggerDate:
-            return "Couldn’t determine the next time for this alarm."
+            return strings.invalidTriggerDateError
         }
     }
 }
@@ -37,15 +39,16 @@ final class NotificationService {
     }
 
     func schedule(alarm: Alarm) async throws {
+        let strings = AppStrings.current
         let status = await authorizationStatus()
         guard status == .authorized || status == .provisional else {
             throw NotificationServiceError.notAuthorized
         }
 
-        let weekdayName = weekdayName(for: alarm.weekday)
+        let weekdayName = weekdayName(for: alarm.weekday, strings: strings)
         let content = UNMutableNotificationContent()
-        content.title = alarm.label.isEmpty ? "Alarm" : alarm.label
-        content.body = "It’s \(weekdayName) at \(DateFormatter.alarmTime.string(from: alarm.time))"
+        content.title = strings.displayedAlarmLabel(alarm.label)
+        content.body = strings.notificationBody(weekday: weekdayName, time: alarm.time)
         if let customSoundName = alarm.sound.notificationSoundName(
             durationSeconds: alarm.soundDurationSeconds
         ) {
@@ -112,10 +115,10 @@ final class NotificationService {
         center.removePendingNotificationRequests(withIdentifiers: ids.map(\.uuidString))
     }
 
-    private func weekdayName(for weekday: Int) -> String {
-        let symbols = Calendar.current.weekdaySymbols
+    private func weekdayName(for weekday: Int, strings: AppStrings) -> String {
+        let symbols = strings.language.calendar.weekdaySymbols
         guard (1...symbols.count).contains(weekday) else {
-            return "your selected day"
+            return strings.selectedDayFallback
         }
 
         return symbols[weekday - 1]

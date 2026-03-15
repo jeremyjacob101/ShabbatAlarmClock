@@ -11,10 +11,11 @@ struct AddAlarmView: View {
         var id: String { rawValue }
     }
 
+    @EnvironmentObject private var localization: AppLocalizationController
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
-    @FocusState private var isLabelFieldFocused: Bool
+    @State private var isLabelFieldFocused = false
 
     private static func defaultAlarmTime() -> Date {
         Calendar.current.date(
@@ -26,7 +27,7 @@ struct AddAlarmView: View {
     }
 
     @State private var time = Self.defaultAlarmTime()
-    @State private var label = "Alarm"
+    @State private var label = AppStrings.current.defaultAlarmLabel
     @State private var weekday = 7
     @State private var sound: AlarmSound = .defaultSound
     @State private var soundDurationSeconds = Alarm.defaultSoundDurationSeconds
@@ -34,7 +35,6 @@ struct AddAlarmView: View {
     @State private var isTestingSound = false
     @State private var activeAlert: AlertItem?
 
-    private let calendar = Calendar.current
     private let isEditing: Bool
     private let notificationService = NotificationService()
     private let reminderPreferences = AlarmRingerReminderPreferences()
@@ -43,15 +43,17 @@ struct AddAlarmView: View {
     let onSave: (Date, String, Int, AlarmSound, Int, Bool) -> Void
 
     init(alarm: Alarm? = nil, onSave: @escaping (Date, String, Int, AlarmSound, Int, Bool) -> Void) {
+        let strings = AppStrings.current
         let initialAlarm = alarm ?? Alarm(
             time: Self.defaultAlarmTime(),
+            label: strings.defaultAlarmLabel,
             weekday: 7,
             sound: .defaultSound,
             repeatsWeekly: false
         )
 
         _time = State(initialValue: initialAlarm.time)
-        _label = State(initialValue: initialAlarm.label)
+        _label = State(initialValue: strings.editableAlarmLabel(initialAlarm.label))
         _weekday = State(initialValue: initialAlarm.weekday)
         _sound = State(initialValue: initialAlarm.sound)
         _soundDurationSeconds = State(initialValue: initialAlarm.soundDurationSeconds)
@@ -60,83 +62,95 @@ struct AddAlarmView: View {
         self.onSave = onSave
     }
 
+    private var strings: AppStrings {
+        localization.strings
+    }
+
+    private var isRightToLeft: Bool {
+        localization.layoutDirection == .rightToLeft
+    }
+
+    private var cancelPlacement: ToolbarItemPlacement {
+        isRightToLeft ? .topBarTrailing : .topBarLeading
+    }
+
+    private var savePlacement: ToolbarItemPlacement {
+        isRightToLeft ? .topBarLeading : .topBarTrailing
+    }
+
+    private var fixedScreenOrderLayoutDirection: LayoutDirection {
+        .leftToRight
+    }
+
     var body: some View {
         NavigationStack {
             Form {
-                Section("Schedule") {
-                    Picker("Day of Week", selection: $weekday) {
+                Section {
+                    directionalPickerRow(title: strings.dayOfWeek, selection: $weekday) {
                         ForEach(1...7, id: \.self) { day in
-                            Text(calendar.weekdaySymbols[day - 1]).tag(day)
+                            Text(strings.weekdayName(for: day)).tag(day)
                         }
                     }
 
                     DatePicker(
-                        "Alarm Time",
+                        strings.alarmTime,
                         selection: $time,
                         displayedComponents: [.hourAndMinute]
                     )
                     .datePickerStyle(.wheel)
                     .labelsHidden()
                     .frame(maxWidth: .infinity, alignment: .center)
-                }
-
-                Section("Repeat") {
-                    Toggle("Repeat every week", isOn: $repeatsWeekly)
+                    .environment(\.layoutDirection, .leftToRight)
+                } header: {
+                    sectionHeader(strings.scheduleSection)
                 }
 
                 Section {
-                    Picker("Alarm Sound", selection: $sound) {
+                    directionalToggleRow(
+                        title: strings.repeatEveryWeek,
+                        isOn: $repeatsWeekly
+                    )
+                } header: {
+                    sectionHeader(strings.repeatSection)
+                }
+
+                Section {
+                    directionalPickerRow(title: strings.alarmSound, selection: $sound) {
                         ForEach(AlarmSound.allCases) { sound in
-                            Text(sound.displayName).tag(sound)
+                            Text(sound.displayName(in: localization.language)).tag(sound)
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Alarm Sound Length")
-
-                            Spacer()
-
-                            Text("\(soundDurationSeconds)s")
-                                .monospacedDigit()
-                                .foregroundStyle(.secondary)
-                        }
+                    VStack(alignment: isRightToLeft ? .trailing : .leading, spacing: 8) {
+                        directionalValueRow(
+                            title: strings.alarmSoundLength,
+                            valueText: strings.shortDuration(soundDurationSeconds)
+                        )
 
                         DiscreteStepSlider(
                             value: $soundDurationSeconds,
                             steps: Alarm.supportedSoundDurations,
-                            accessibilityLabel: "Alarm sound length"
+                            accessibilityLabel: strings.alarmSoundLengthAccessibilityLabel
                         )
                     }
                 } header: {
-                    HStack {
-                        Text("Sound")
-
-                        Spacer()
-
-                        Button {
-                            handleTestSoundButtonTap()
-                        } label: {
-                            HStack(spacing: 3) {
-                                Image(systemName: isTestingSound ? "hat.widebrim.fill" : "play.fill")
-                                Text(isTestingSound ? "Stop Sound" : "Test Sound")
-                            }
-                            .font(.footnote.weight(.semibold))
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    directionalHeaderWithAction(
+                        title: strings.soundSection,
+                        actionTitle: isTestingSound ? strings.stopSound : strings.testSound,
+                        systemImage: isTestingSound ? "hat.widebrim.fill" : "play.fill",
+                        action: handleTestSoundButtonTap
+                    )
                     .textCase(nil)
                 }
 
-                Section("Label") {
-                    TextField("Alarm", text: $label)
-                        .focused($isLabelFieldFocused)
-                        .submitLabel(.done)
-                        .onSubmit {
-                            dismissKeyboard()
-                        }
+                Section {
+                    labelTextField
+                } header: {
+                    sectionHeader(strings.labelSection)
                 }
             }
+            .environment(\.layoutDirection, localization.layoutDirection)
+            .id("add-alarm-form-\(localization.language.rawValue)")
             .scrollDismissesKeyboard(.immediately)
             .background(
                 KeyboardDismissTapInstaller {
@@ -149,46 +163,48 @@ struct AddAlarmView: View {
                     Alert(
                         title: Text(AppAlertContent.notificationPermissionTitle),
                         message: Text(AppAlertContent.notificationPermissionMessage),
-                        primaryButton: .default(Text("Allow")) {
+                        primaryButton: .default(Text(strings.allow)) {
                             requestNotificationPermissionForTestSound()
                         },
-                        secondaryButton: .cancel(Text("Not Now"))
+                        secondaryButton: .cancel(Text(strings.notNow))
                     )
                 case .notificationPermissionSettings:
                     Alert(
                         title: Text(AppAlertContent.notificationPermissionTitle),
                         message: Text(AppAlertContent.notificationPermissionMessage),
-                        primaryButton: .default(Text("Open Settings")) {
+                        primaryButton: .default(Text(strings.openSettings)) {
                             openNotificationSettings()
                         },
-                        secondaryButton: .cancel(Text("Not Now"))
+                        secondaryButton: .cancel(Text(strings.notNow))
                     )
                 case .ringerReminder:
                     Alert(
                         title: Text(AppAlertContent.ringerReminderTitle),
                         message: Text(AppAlertContent.ringerReminderMessage),
-                        dismissButton: .default(Text("OK")) {
+                        dismissButton: .default(Text(strings.ok)) {
                             startSoundPreview()
                         }
                     )
                 }
             }
-            .navigationTitle(isEditing ? "Edit Alarm" : "New Alarm")
+            .navigationTitle(isEditing ? strings.editAlarmTitle : strings.newAlarmTitle)
             .navigationBarTitleDisplayMode(.inline)
+            .environment(\.layoutDirection, localization.layoutDirection)
+            .id("add-alarm-stack-\(localization.language.rawValue)")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
+                ToolbarItem(placement: cancelPlacement) {
+                    Button(strings.cancel) {
                         stopSoundPreview()
                         dismiss()
                     }
                 }
 
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") {
+                ToolbarItem(placement: savePlacement) {
+                    Button(strings.save) {
                         stopSoundPreview()
                         onSave(
                             time,
-                            label.trimmingCharacters(in: .whitespacesAndNewlines),
+                            strings.normalizedAlarmLabelInput(label),
                             weekday,
                             sound,
                             soundDurationSeconds,
@@ -228,6 +244,161 @@ struct AddAlarmView: View {
                 stopSoundPreview()
             }
         }
+    }
+
+    @ViewBuilder
+    private func sectionHeader(_ title: String) -> some View {
+        fixedScreenOrderRow {
+            if isRightToLeft {
+                Spacer()
+                Text(title)
+                    .multilineTextAlignment(.trailing)
+            } else {
+                Text(title)
+                    .multilineTextAlignment(.leading)
+                Spacer()
+            }
+        }
+        .textCase(nil)
+    }
+
+    @ViewBuilder
+    private func directionalHeaderWithAction(
+        title: String,
+        actionTitle: String,
+        systemImage: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        fixedScreenOrderRow {
+            if isRightToLeft {
+                actionButton(title: actionTitle, systemImage: systemImage, action: action)
+                Spacer()
+                Text(title)
+                    .multilineTextAlignment(.trailing)
+            } else {
+                Text(title)
+                    .multilineTextAlignment(.leading)
+                Spacer()
+                actionButton(title: actionTitle, systemImage: systemImage, action: action)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func actionButton(
+        title: String,
+        systemImage: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 3) {
+                Image(systemName: systemImage)
+                Text(title)
+            }
+            .font(.footnote.weight(.semibold))
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func directionalValueRow(title: String, valueText: String) -> some View {
+        fixedScreenOrderRow {
+            if isRightToLeft {
+                Text(valueText)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(title)
+                    .multilineTextAlignment(.trailing)
+            } else {
+                Text(title)
+                    .multilineTextAlignment(.leading)
+                Spacer()
+                Text(valueText)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func directionalToggleRow(title: String, isOn: Binding<Bool>) -> some View {
+        fixedScreenOrderRow {
+            if isRightToLeft {
+                Toggle("", isOn: isOn)
+                    .labelsHidden()
+                    .accessibilityLabel(title)
+                Spacer()
+                Text(title)
+                    .multilineTextAlignment(.trailing)
+            } else {
+                Text(title)
+                    .multilineTextAlignment(.leading)
+                Spacer()
+                Toggle("", isOn: isOn)
+                    .labelsHidden()
+                    .accessibilityLabel(title)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func directionalPickerRow<SelectionValue: Hashable, Content: View>(
+        title: String,
+        selection: Binding<SelectionValue>,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        fixedScreenOrderRow {
+            if isRightToLeft {
+                Picker(title, selection: selection) {
+                    content()
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .environment(\.layoutDirection, localization.layoutDirection)
+
+                Spacer()
+
+                Text(title)
+                    .multilineTextAlignment(.trailing)
+            } else {
+                Text(title)
+                    .multilineTextAlignment(.leading)
+                Spacer()
+                Picker(title, selection: selection) {
+                    content()
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .environment(\.layoutDirection, localization.layoutDirection)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func fixedScreenOrderRow<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack {
+            content()
+        }
+        .frame(maxWidth: .infinity)
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+        .alignmentGuide(.listRowSeparatorTrailing) { dimensions in
+            dimensions.width
+        }
+        .environment(\.layoutDirection, fixedScreenOrderLayoutDirection)
+    }
+
+    private var labelTextField: some View {
+        DirectionalTextField(
+            text: $label,
+            isFocused: $isLabelFieldFocused,
+            placeholder: strings.defaultAlarmLabel,
+            isRightToLeft: isRightToLeft,
+            onSubmit: dismissKeyboard
+        )
+        .frame(maxWidth: .infinity, minHeight: 22, alignment: isRightToLeft ? .trailing : .leading)
     }
 
     private func handleTestSoundButtonTap() {
@@ -313,6 +484,92 @@ struct AddAlarmView: View {
     }
 }
 
+private struct DirectionalTextField: UIViewRepresentable {
+    @Binding var text: String
+    @Binding var isFocused: Bool
+
+    let placeholder: String
+    let isRightToLeft: Bool
+    let onSubmit: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeUIView(context: Context) -> UITextField {
+        let textField = UITextField(frame: .zero)
+        textField.borderStyle = .none
+        textField.backgroundColor = .clear
+        textField.returnKeyType = .done
+        textField.clearButtonMode = .never
+        textField.adjustsFontForContentSizeCategory = true
+        textField.delegate = context.coordinator
+        textField.addTarget(
+            context.coordinator,
+            action: #selector(Coordinator.textDidChange(_:)),
+            for: .editingChanged
+        )
+        applyConfiguration(to: textField)
+        return textField
+    }
+
+    func updateUIView(_ uiView: UITextField, context: Context) {
+        context.coordinator.parent = self
+
+        if uiView.text != text {
+            uiView.text = text
+        }
+
+        applyConfiguration(to: uiView)
+
+        if isFocused {
+            if uiView.window != nil, !uiView.isFirstResponder {
+                uiView.becomeFirstResponder()
+            }
+        } else if uiView.isFirstResponder {
+            uiView.resignFirstResponder()
+        }
+    }
+
+    private func applyConfiguration(to textField: UITextField) {
+        textField.placeholder = placeholder
+        textField.textAlignment = isRightToLeft ? .right : .left
+        textField.semanticContentAttribute = isRightToLeft ? .forceRightToLeft : .forceLeftToRight
+    }
+
+    final class Coordinator: NSObject, UITextFieldDelegate {
+        var parent: DirectionalTextField
+
+        init(parent: DirectionalTextField) {
+            self.parent = parent
+        }
+
+        @objc func textDidChange(_ textField: UITextField) {
+            let updatedText = textField.text ?? ""
+            guard parent.text != updatedText else { return }
+            parent.text = updatedText
+        }
+
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            guard !parent.isFocused else { return }
+            parent.isFocused = true
+        }
+
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            if parent.isFocused {
+                parent.isFocused = false
+            }
+        }
+
+        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+            parent.onSubmit()
+            textField.resignFirstResponder()
+            return false
+        }
+    }
+}
+
 #Preview {
     AddAlarmView { _, _, _, _, _, _ in }
+        .environmentObject(AppLocalizationController())
 }

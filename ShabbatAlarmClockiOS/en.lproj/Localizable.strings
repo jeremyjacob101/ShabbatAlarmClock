@@ -1,0 +1,84 @@
+"alarm.default_label" = "Alarm";
+"alarm.add" = "Add alarm";
+"alarm.edit.title" = "Edit Alarm";
+"alarm.new.title" = "New Alarm";
+
+"alarms.title" = "Alarms";
+"alarms.empty.title" = "No Alarms Yet";
+"alarms.empty.message" = "Tap + to create your first alarm.";
+
+"settings.title" = "Settings";
+"settings.notifications.enable" = "Enable Notifications";
+"settings.notifications.manage" = "Notification Settings";
+"settings.app_color" = "App Color";
+"settings.language" = "Language";
+"settings.language.option.system" = "System Default";
+"settings.language.option.english" = "English";
+"settings.language.option.hebrew" = "Hebrew";
+"settings.leave_rating" = "Leave a Rating";
+"settings.contact" = "Contact";
+
+"notice.title" = "Notice";
+
+"button.open_settings" = "Open Settings";
+"button.allow" = "Allow";
+"button.not_now" = "Not Now";
+"button.cancel" = "Cancel";
+"button.save" = "Save";
+"button.ok" = "OK";
+"button.okay" = "Okay";
+"button.dont_show_again" = "Don't Show Again";
+
+"schedule.section" = "Schedule";
+"schedule.day_of_week" = "Day of Week";
+"schedule.time" = "Alarm Time";
+
+"repeat.section" = "Repeat";
+"repeat.every_week" = "Repeat every week";
+
+"sound.section" = "Sound";
+"sound.alarm" = "Alarm Sound";
+"sound.length" = "Alarm Sound Length";
+"sound.test" = "Test Sound";
+"sound.stop" = "Stop Sound";
+"sound.accessibility.length" = "Alarm sound length";
+"sound.name.chimes" = "Chimes";
+"sound.name.alarm" = "Alarm";
+"sound.name.harp" = "Harp";
+
+"label.section" = "Label";
+
+"weekday.unknown" = "Unknown Day";
+"weekday.selected_fallback" = "your selected day";
+
+"alerts.notifications.title" = "Enable Notifications";
+"alerts.notifications.message" = "Shabbat Alarm Clock uses notifications to deliver alarms at the scheduled time. Enable notifications now so your alarms can ring.";
+"alerts.notifications.request_failed" = "Failed to request notification permission. Check Settings and try again.";
+"alerts.notifications.not_allowed" = "Notifications were not allowed. You can still save alarms, but they won’t ring until notifications are enabled.";
+"alerts.notifications.saved_but_disabled" = "Alarm saved, but notifications are not enabled. Turn them on in Settings to activate alarms.";
+"alerts.notifications.saved_but_request_failed" = "Alarm saved, but notification permission couldn’t be requested. Check Settings to activate alarms.";
+"alerts.notifications.disabled_for_enable" = "Notifications are not enabled. Turn them on in Settings to activate alarms.";
+"alerts.notifications.enable_failed" = "Couldn’t enable the alarm because notification permission couldn’t be requested. Check Settings and try again.";
+"alerts.notifications.schedule_failed" = "Couldn’t schedule the alarm. Check notification settings and try again.";
+
+"alerts.ringer.title" = "Ringer Must Be On";
+"alerts.ringer.message" = "Turn on ringer to hear this alarm.";
+
+"errors.notifications.not_authorized" = "Notifications are not authorized. Please enable them in Settings.";
+"errors.notifications.invalid_trigger_date" = "Couldn’t determine the next time for this alarm.";
+
+"theme.black" = "Black";
+"theme.blue" = "Blue";
+"theme.teal" = "Teal";
+"theme.green" = "Green";
+"theme.mint" = "Mint";
+"theme.orange" = "Orange";
+"theme.rose" = "Rose";
+"theme.red" = "Red";
+"theme.lavender" = "Lavender";
+
+"duration.short" = "%ds";
+"duration.accessibility" = "%d seconds";
+"notification.body" = "It’s %@ at %@";
+
+"contact.email.subject" = "[CONTACT] Shabbat Alarm Clock";

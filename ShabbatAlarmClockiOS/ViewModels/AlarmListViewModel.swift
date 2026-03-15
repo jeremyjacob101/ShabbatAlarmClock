@@ -85,6 +85,7 @@ final class AlarmListViewModel: ObservableObject {
 
     func requestNotificationPermissionIfNeeded() {
         Task {
+            let strings = AppStrings.current
             let status = await refreshNotificationStatus()
             guard status == .notDetermined else { return }
 
@@ -93,11 +94,11 @@ final class AlarmListViewModel: ObservableObject {
                 let updatedStatus = await refreshNotificationStatus()
 
                 if !granted || !isNotificationAuthorized(updatedStatus) {
-                    presentAlert("Notifications were not allowed. You can still save alarms, but they won’t ring until notifications are enabled.")
+                    presentAlert(strings.notificationsNotAllowed)
                 }
             } catch {
                 await refreshNotificationStatus()
-                presentAlert("Failed to request notification permission: \(error.localizedDescription)")
+                presentAlert(strings.notificationPermissionRequestFailed)
             }
         }
     }
@@ -111,6 +112,7 @@ final class AlarmListViewModel: ObservableObject {
         repeatsWeekly: Bool
     ) {
         Task {
+            let strings = AppStrings.current
             let notificationStatusResult = await notificationStatusForScheduling()
             let notificationsEnabled: Bool
 
@@ -118,16 +120,17 @@ final class AlarmListViewModel: ObservableObject {
             case .success(let status):
                 notificationsEnabled = isNotificationAuthorized(status)
                 if !notificationsEnabled {
-                    presentAlert("Alarm saved, but notifications are not enabled. Turn them on in Settings to activate alarms.")
+                    presentAlert(strings.notificationsSavedButDisabled)
                 }
             case .failure(let error):
                 notificationsEnabled = false
-                presentAlert("Alarm saved, but notification permission couldn’t be requested: \(error.localizedDescription)")
+                print("Failed to refresh notification status while saving alarm: \(error)")
+                presentAlert(strings.notificationsSavedButRequestFailed)
             }
 
             var newAlarm = Alarm(
                 time: time,
-                label: label,
+                label: strings.normalizedAlarmLabelInput(label),
                 isEnabled: notificationsEnabled,
                 weekday: weekday,
                 sound: sound,
@@ -172,7 +175,7 @@ final class AlarmListViewModel: ObservableObject {
         notificationService.cancel(alarmID: id)
 
         alarms[index].time = time
-        alarms[index].label = label.isEmpty ? "Alarm" : label
+        alarms[index].label = AppStrings.current.normalizedAlarmLabelInput(label)
         alarms[index].weekday = weekday
         alarms[index].sound = sound
         alarms[index].soundDurationSeconds = Alarm.clampedSoundDuration(soundDurationSeconds)
@@ -209,7 +212,7 @@ final class AlarmListViewModel: ObservableObject {
                     guard isNotificationAuthorized(status) else {
                         alarms[refreshedIndex].isEnabled = false
                         persist()
-                        presentAlert("Notifications are not enabled. Turn them on in Settings to activate alarms.")
+                        presentAlert(AppStrings.current.notificationsDisabledForEnable)
                         return
                     }
 
@@ -230,7 +233,8 @@ final class AlarmListViewModel: ObservableObject {
                 case .failure(let error):
                     alarms[refreshedIndex].isEnabled = false
                     persist()
-                    presentAlert("Couldn’t enable alarm because notification permission couldn’t be requested: \(error.localizedDescription)")
+                    print("Failed to refresh notification status while enabling alarm: \(error)")
+                    presentAlert(AppStrings.current.notificationsEnableFailed)
                 }
             }
         } else {
@@ -268,12 +272,30 @@ final class AlarmListViewModel: ObservableObject {
         presentNextAlertIfNeeded()
     }
 
+    func handleAppLanguageChange() {
+        let enabledAlarms = alarms.filter(\.isEnabled)
+        guard !enabledAlarms.isEmpty else { return }
+
+        notificationService.cancelAll(ids: enabledAlarms.map(\.id))
+
+        Task {
+            for alarm in enabledAlarms {
+                do {
+                    try await notificationService.schedule(alarm: alarm)
+                } catch {
+                    handleSchedulingError(for: alarm.id, error: error)
+                }
+            }
+        }
+    }
+
     private func handleSchedulingError(for alarmID: UUID, error: Error) {
         if let index = alarms.firstIndex(where: { $0.id == alarmID }) {
             alarms[index].isEnabled = false
             persist()
         }
-        presentAlert("Couldn’t schedule alarm: \(error.localizedDescription)")
+        print("Failed to schedule alarm: \(error)")
+        presentAlert(AppStrings.current.notificationSchedulingFailed)
     }
 
     private func persist() {

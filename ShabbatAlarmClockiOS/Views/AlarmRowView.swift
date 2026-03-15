@@ -1,60 +1,81 @@
 import SwiftUI
 
 struct AlarmRowView: View {
+    @EnvironmentObject private var localization: AppLocalizationController
+
     let alarm: Alarm
     let themeColor: Color
     let onEdit: () -> Void
     let onToggle: (Bool) -> Void
 
+    private var isRightToLeft: Bool {
+        localization.layoutDirection == .rightToLeft
+    }
+
+    private var fixedScreenOrderLayoutDirection: LayoutDirection {
+        .leftToRight
+    }
+
     private var weekdayName: String {
-        let symbols = Calendar.current.weekdaySymbols
-        guard (1...symbols.count).contains(alarm.weekday) else {
-            return "Unknown Day"
-        }
-        return symbols[alarm.weekday - 1]
+        localization.strings.weekdayName(for: alarm.weekday)
     }
 
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: onEdit) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(DateFormatter.alarmTime.string(from: alarm.time))
-                            .font(.system(size: 34, weight: .medium, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundStyle(themeColor)
-
-                        HStack(spacing: 6) {
-                            if alarm.repeatsWeekly {
-                                Image(systemName: "repeat")
-                                    .font(.footnote)
-                                    .foregroundStyle(themeColor)
-                            }
-
-                            Text(weekdayName)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Text(alarm.label)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-                }
-                .contentShape(Rectangle())
+            if isRightToLeft {
+                alarmToggle
+                alarmDetailsButton
+            } else {
+                alarmDetailsButton
+                alarmToggle
             }
-            .buttonStyle(.plain)
-
-            Toggle("", isOn: Binding(
-                get: { alarm.isEnabled },
-                set: { onToggle($0) }
-            ))
-            .labelsHidden()
         }
         .padding(.vertical, 6)
         .opacity(alarm.isEnabled ? 1.0 : 0.5)
+        .environment(\.layoutDirection, fixedScreenOrderLayoutDirection)
+        .id("\(alarm.id.uuidString)-\(localization.language.rawValue)")
+    }
+
+    private var alarmDetailsButton: some View {
+        Button(action: onEdit) {
+            VStack(alignment: isRightToLeft ? .trailing : .leading, spacing: 6) {
+                Text(alarm.time, format: .dateTime.hour().minute())
+                    .font(.system(size: 34, weight: .medium, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(themeColor)
+                    .frame(maxWidth: .infinity, alignment: isRightToLeft ? .trailing : .leading)
+
+                HStack(spacing: 6) {
+                    if alarm.repeatsWeekly {
+                        Image(systemName: "repeat")
+                            .font(.footnote)
+                            .foregroundStyle(themeColor)
+                    }
+
+                    Text(weekdayName)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: isRightToLeft ? .trailing : .leading)
+
+                Text(localization.strings.displayedAlarmLabel(alarm.label))
+                    .lineLimit(1)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: isRightToLeft ? .trailing : .leading)
+            }
+            .contentShape(Rectangle())
+            .frame(maxWidth: .infinity, alignment: isRightToLeft ? .trailing : .leading)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var alarmToggle: some View {
+        Toggle("", isOn: Binding(
+            get: { alarm.isEnabled },
+            set: { onToggle($0) }
+        ))
+        .labelsHidden()
     }
 }
 
@@ -66,4 +87,5 @@ struct AlarmRowView: View {
         onToggle: { _ in }
     )
     .padding()
+    .environmentObject(AppLocalizationController())
 }

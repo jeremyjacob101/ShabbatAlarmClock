@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 struct DiscreteStepSlider: View {
+    @EnvironmentObject private var localization: AppLocalizationController
+
     @Binding private var value: Int
 
     private let steps: [Int]
@@ -27,7 +29,8 @@ struct DiscreteStepSlider: View {
                 value: $value,
                 steps: steps,
                 accessibilityLabel: accessibilityLabel,
-                stepPositions: $stepPositions
+                stepPositions: $stepPositions,
+                language: localization.language
             )
             .frame(height: 31)
 
@@ -38,6 +41,7 @@ struct DiscreteStepSlider: View {
             )
             .frame(height: 36)
         }
+        .environment(\.layoutDirection, .leftToRight)
         .onAppear {
             value = clampedStep(for: value)
         }
@@ -65,6 +69,7 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
     let accessibilityLabel: String
 
     @Binding var stepPositions: [CGFloat]
+    let language: AppLanguage
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -75,7 +80,8 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
         slider.steps = steps
         slider.isContinuous = true
         slider.accessibilityLabel = accessibilityLabel
-        slider.updateAccessibilityValue(with: clampedStep(for: value))
+        slider.semanticContentAttribute = language.semanticContentAttribute
+        slider.updateAccessibilityValue(with: clampedStep(for: value), strings: AppStrings(language: language))
         slider.setValue(sliderValue(for: value), animated: false)
         slider.addTarget(
             context.coordinator,
@@ -100,10 +106,14 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
         context.coordinator.parent = self
         uiView.steps = steps
         uiView.accessibilityLabel = accessibilityLabel
+        uiView.semanticContentAttribute = language.semanticContentAttribute
 
         let snappedValue = clampedStep(for: value)
         let snappedSliderValue = sliderValue(for: snappedValue)
-        uiView.updateAccessibilityValue(with: snappedValue)
+        uiView.updateAccessibilityValue(
+            with: snappedValue,
+            strings: AppStrings(language: language)
+        )
 
         if uiView.value != snappedSliderValue {
             uiView.setValue(snappedSliderValue, animated: false)
@@ -158,7 +168,10 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
                 slider.setValue(snappedSliderValue, animated: false)
             }
 
-            slider.updateAccessibilityValue(with: snappedValue)
+            slider.updateAccessibilityValue(
+                with: snappedValue,
+                strings: AppStrings(language: parent.language)
+            )
 
             if lastStepIndex != snappedIndex {
                 if lastStepIndex != nil {
@@ -214,12 +227,13 @@ private final class StepTrackingSlider: UISlider {
         super.layoutSubviews()
         reportStepPositions()
     }
+
     func sliderValue(forStepIndex index: Int) -> Float {
         Float(min(max(index, 0), max(steps.count - 1, 0)))
     }
 
-    func updateAccessibilityValue(with stepValue: Int) {
-        accessibilityValue = "\(stepValue) seconds"
+    func updateAccessibilityValue(with stepValue: Int, strings: AppStrings) {
+        accessibilityValue = strings.accessibilityDuration(stepValue)
     }
 
     func reportStepPositions() {
@@ -248,6 +262,8 @@ private final class StepTrackingSlider: UISlider {
 }
 
 private struct TickMarkRow: View {
+    @EnvironmentObject private var localization: AppLocalizationController
+
     let steps: [Int]
     let stepPositions: [CGFloat]
     let selectedStep: Int
@@ -263,7 +279,7 @@ private struct TickMarkRow: View {
                             .fill(isReached ? Color.accentColor : Color.secondary.opacity(0.28))
                             .frame(width: 3, height: 10)
 
-                        Text("\(step)s")
+                        Text(localization.strings.shortDuration(step))
                             .monospacedDigit()
                     }
                     .font(.caption)

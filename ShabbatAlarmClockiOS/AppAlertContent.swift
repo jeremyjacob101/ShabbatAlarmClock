@@ -1,9 +1,19 @@
 import Foundation
 
 enum AppAlertContent {
-    static let notificationPermissionTitle = "Enable Notifications"
-    static let notificationPermissionMessage = "Shabbat Alarm Clock uses notifications to deliver alarms at the scheduled time. Enable notifications now so your alarms can ring."
+    static var notificationPermissionTitle: String {
+        AppStrings.current.notificationPermissionTitle
+    }
 
-    static let ringerReminderTitle = "Ringer Must Be On"
-    static let ringerReminderMessage = "Turn on ringer to hear this alarm."
+    static var notificationPermissionMessage: String {
+        AppStrings.current.notificationPermissionMessage
+    }
+
+    static var ringerReminderTitle: String {
+        AppStrings.current.ringerReminderTitle
+    }
+
+    static var ringerReminderMessage: String {
+        AppStrings.current.ringerReminderMessage
+    }
 }

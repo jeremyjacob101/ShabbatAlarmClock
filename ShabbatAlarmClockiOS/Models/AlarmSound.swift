@@ -11,15 +11,19 @@ enum AlarmSound: String, CaseIterable, Codable, Identifiable {
 
     var id: String { rawValue }
 
-    var displayName: String {
+    var localizationKey: String {
         switch self {
         case .chimes:
-            return "Chimes"
+            return "sound.name.chimes"
         case .alarm:
-            return "Alarm"
+            return "sound.name.alarm"
         case .harp:
-            return "Harp"
+            return "sound.name.harp"
         }
+    }
+
+    func displayName(in language: AppLanguage = AppLanguagePreferenceStore.currentLanguage()) -> String {
+        AppStrings(language: language).soundDisplayName(self)
     }
 
     var fileName: String {
