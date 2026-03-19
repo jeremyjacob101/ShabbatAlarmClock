@@ -18,7 +18,50 @@ enum NotificationServiceError: LocalizedError {
 }
 
 final class NotificationService {
+    private struct WeekdayTimeSlot: Hashable {
+        let weekday: Int
+        let hour: Int
+        let minute: Int
+    }
+
+    private struct WeeklySlotKey: Hashable, Comparable {
+        let time: WeekdayTimeSlot
+
+        var identifier: String {
+            "\(NotificationService.weeklyIdentifierPrefix)\(time.weekday)-\(time.hour)-\(time.minute)"
+        }
+
+        static func < (lhs: WeeklySlotKey, rhs: WeeklySlotKey) -> Bool {
+            if lhs.time.weekday != rhs.time.weekday {
+                return lhs.time.weekday < rhs.time.weekday
+            }
+
+            if lhs.time.hour != rhs.time.hour {
+                return lhs.time.hour < rhs.time.hour
+            }
+
+            return lhs.time.minute < rhs.time.minute
+        }
+    }
+
+    private struct OnceSlotKey: Hashable, Comparable {
+        let fireDate: Date
+        let timestamp: Int
+        let weekdayTime: WeekdayTimeSlot
+
+        var identifier: String {
+            "\(NotificationService.onceIdentifierPrefix)\(timestamp)"
+        }
+
+        static func < (lhs: OnceSlotKey, rhs: OnceSlotKey) -> Bool {
+            lhs.fireDate < rhs.fireDate
+        }
+    }
+
     private let center = UNUserNotificationCenter.current()
+    private static let managedNotificationKey = "managedAlarmNotification"
+    private static let weeklyIdentifierPrefix = "weekly-"
+    private static let onceIdentifierPrefix = "once-"
 
     func authorizationStatus() async -> UNAuthorizationStatus {
         let settings = await notificationSettings()
@@ -39,80 +82,41 @@ final class NotificationService {
     }
 
     func schedule(alarm: Alarm) async throws {
-        let strings = AppStrings.current
         let status = await authorizationStatus()
         guard status == .authorized || status == .provisional else {
             throw NotificationServiceError.notAuthorized
         }
 
-        let weekdayName = weekdayName(for: alarm.weekday, strings: strings)
-        let content = UNMutableNotificationContent()
-        content.title = strings.displayedAlarmLabel(alarm.label)
-        content.body = strings.notificationBody(weekday: weekdayName, time: alarm.time)
-        if let customSoundName = alarm.sound.notificationSoundName(
-            durationSeconds: alarm.soundDurationSeconds
-        ) {
-            content.sound = UNNotificationSound(
-                named: UNNotificationSoundName(rawValue: customSoundName)
-            )
-        } else {
-            content.sound = .default
+        guard let request = try notificationRequests(for: [alarm]).first else { return }
+        try await add(request: request)
+    }
+
+    func replaceScheduledNotifications(for alarms: [Alarm], knownAlarmIDs: [UUID]) async throws {
+        let identifiersToRemove = await managedNotificationIdentifiers(knownAlarmIDs: knownAlarmIDs)
+        if !identifiersToRemove.isEmpty {
+            center.removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
         }
 
-        let calendar = Calendar.current
-        let trigger: UNCalendarNotificationTrigger
+        let enabledAlarms = alarms.filter(\.isEnabled)
+        guard !enabledAlarms.isEmpty else { return }
 
-        if alarm.repeatsWeekly {
-            let timeComponents = calendar.dateComponents([.hour, .minute], from: alarm.time)
-            var components = DateComponents()
-            components.weekday = alarm.weekday
-            components.hour = timeComponents.hour
-            components.minute = timeComponents.minute
-            components.second = 0
-
-            trigger = UNCalendarNotificationTrigger(
-                dateMatching: components,
-                repeats: true
-            )
-        } else {
-            guard let fireDate = alarm.scheduledDate ?? alarm.nextTriggerDate() else {
-                throw NotificationServiceError.invalidTriggerDate
-            }
-
-            let components = calendar.dateComponents(
-                [.year, .month, .day, .hour, .minute, .second],
-                from: fireDate
-            )
-
-            trigger = UNCalendarNotificationTrigger(
-                dateMatching: components,
-                repeats: false
-            )
+        let status = await authorizationStatus()
+        guard status == .authorized || status == .provisional else {
+            throw NotificationServiceError.notAuthorized
         }
 
-        let request = UNNotificationRequest(
-            identifier: alarm.id.uuidString,
-            content: content,
-            trigger: trigger
-        )
+        let requests = try notificationRequests(for: enabledAlarms)
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            center.add(request) { error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: ())
-                }
-            }
+        for request in requests {
+            try Task.checkCancellation()
+            try await add(request: request)
         }
     }
 
-    func cancel(alarmID: UUID) {
-        center.removePendingNotificationRequests(withIdentifiers: [alarmID.uuidString])
-    }
-
-    func cancelAll(ids: [UUID]) {
-        center.removePendingNotificationRequests(withIdentifiers: ids.map(\.uuidString))
+    func clearManagedNotifications(knownAlarmIDs: [UUID]) async {
+        let identifiersToRemove = await managedNotificationIdentifiers(knownAlarmIDs: knownAlarmIDs)
+        guard !identifiersToRemove.isEmpty else { return }
+        center.removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
     }
 
     private func weekdayName(for weekday: Int, strings: AppStrings) -> String {
@@ -128,6 +132,237 @@ final class NotificationService {
         await withCheckedContinuation { continuation in
             center.getNotificationSettings { settings in
                 continuation.resume(returning: settings)
+            }
+        }
+    }
+
+    private func notificationRequests(for alarms: [Alarm]) throws -> [UNNotificationRequest] {
+        let calendar = Calendar.current
+        let sortedAlarms = alarms.sorted(by: notificationRepresentativeOrdering)
+        var weeklyRepresentatives: [WeeklySlotKey: Alarm] = [:]
+        var onceRepresentatives: [OnceSlotKey: Alarm] = [:]
+
+        for alarm in sortedAlarms {
+            if alarm.repeatsWeekly {
+                let timeComponents = calendar.dateComponents([.hour, .minute], from: alarm.time)
+                let key = WeeklySlotKey(
+                    time: WeekdayTimeSlot(
+                        weekday: alarm.weekday,
+                        hour: timeComponents.hour ?? 0,
+                        minute: timeComponents.minute ?? 0
+                    )
+                )
+
+                if weeklyRepresentatives[key] == nil {
+                    weeklyRepresentatives[key] = alarm
+                }
+                continue
+            }
+
+            guard let fireDate = alarm.scheduledDate ?? alarm.nextTriggerDate() else {
+                throw NotificationServiceError.invalidTriggerDate
+            }
+
+            let components = calendar.dateComponents([.weekday, .hour, .minute], from: fireDate)
+            let timestamp = Int(fireDate.timeIntervalSince1970.rounded())
+            let key = OnceSlotKey(
+                fireDate: fireDate,
+                timestamp: timestamp,
+                weekdayTime: WeekdayTimeSlot(
+                    weekday: components.weekday ?? alarm.weekday,
+                    hour: components.hour ?? 0,
+                    minute: components.minute ?? 0
+                )
+            )
+
+            if onceRepresentatives[key] == nil {
+                onceRepresentatives[key] = alarm
+            }
+        }
+
+        let weeklyTimes = Set(weeklyRepresentatives.keys.map(\.time))
+        let strings = AppStrings.current
+        var requests: [UNNotificationRequest] = []
+
+        for key in weeklyRepresentatives.keys.sorted() {
+            guard let alarm = weeklyRepresentatives[key] else { continue }
+            requests.append(
+                weeklyRequest(
+                    for: alarm,
+                    key: key,
+                    strings: strings
+                )
+            )
+        }
+
+        for key in onceRepresentatives.keys.sorted() {
+            guard !weeklyTimes.contains(key.weekdayTime) else { continue }
+            guard let alarm = onceRepresentatives[key] else { continue }
+            requests.append(
+                oneTimeRequest(
+                    for: alarm,
+                    fireDate: key.fireDate,
+                    identifier: key.identifier,
+                    strings: strings
+                )
+            )
+        }
+
+        return requests
+    }
+
+    private func weeklyRequest(
+        for alarm: Alarm,
+        key: WeeklySlotKey,
+        strings: AppStrings
+    ) -> UNNotificationRequest {
+        var components = DateComponents()
+        components.weekday = key.time.weekday
+        components.hour = key.time.hour
+        components.minute = key.time.minute
+        components.second = 0
+
+        return UNNotificationRequest(
+            identifier: key.identifier,
+            content: notificationContent(
+                for: alarm,
+                weekday: key.time.weekday,
+                time: alarm.time,
+                strings: strings
+            ),
+            trigger: UNCalendarNotificationTrigger(
+                dateMatching: components,
+                repeats: true
+            )
+        )
+    }
+
+    private func oneTimeRequest(
+        for alarm: Alarm,
+        fireDate: Date,
+        identifier: String,
+        strings: AppStrings
+    ) -> UNNotificationRequest {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents(
+            [.year, .month, .day, .hour, .minute, .second],
+            from: fireDate
+        )
+
+        return UNNotificationRequest(
+            identifier: identifier,
+            content: notificationContent(
+                for: alarm,
+                weekday: calendar.component(.weekday, from: fireDate),
+                time: fireDate,
+                strings: strings
+            ),
+            trigger: UNCalendarNotificationTrigger(
+                dateMatching: components,
+                repeats: false
+            )
+        )
+    }
+
+    private func notificationContent(
+        for alarm: Alarm,
+        weekday: Int,
+        time: Date,
+        strings: AppStrings
+    ) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = strings.displayedAlarmLabel(alarm.label)
+        content.body = strings.notificationBody(
+            weekday: weekdayName(for: weekday, strings: strings),
+            time: time
+        )
+        content.userInfo[Self.managedNotificationKey] = true
+
+        if let customSoundName = alarm.sound.notificationSoundName(
+            durationSeconds: alarm.soundDurationSeconds
+        ) {
+            content.sound = UNNotificationSound(
+                named: UNNotificationSoundName(rawValue: customSoundName)
+            )
+        } else {
+            content.sound = .default
+        }
+
+        return content
+    }
+
+    private func notificationRepresentativeOrdering(_ lhs: Alarm, _ rhs: Alarm) -> Bool {
+        if lhs.repeatsWeekly != rhs.repeatsWeekly {
+            return lhs.repeatsWeekly && !rhs.repeatsWeekly
+        }
+
+        if lhs.weekday != rhs.weekday {
+            return lhs.weekday < rhs.weekday
+        }
+
+        let calendar = Calendar.current
+        let leftTime = calendar.dateComponents([.hour, .minute], from: lhs.time)
+        let rightTime = calendar.dateComponents([.hour, .minute], from: rhs.time)
+        let leftMinutes = (leftTime.hour ?? 0) * 60 + (leftTime.minute ?? 0)
+        let rightMinutes = (rightTime.hour ?? 0) * 60 + (rightTime.minute ?? 0)
+
+        if leftMinutes != rightMinutes {
+            return leftMinutes < rightMinutes
+        }
+
+        let leftFireDate = lhs.scheduledDate ?? lhs.nextTriggerDate() ?? lhs.time
+        let rightFireDate = rhs.scheduledDate ?? rhs.nextTriggerDate() ?? rhs.time
+        if leftFireDate != rightFireDate {
+            return leftFireDate < rightFireDate
+        }
+
+        return lhs.id.uuidString < rhs.id.uuidString
+    }
+
+    private func managedNotificationIdentifiers(knownAlarmIDs: [UUID]) async -> [String] {
+        let legacyAlarmIDs = Set(knownAlarmIDs.map(\.uuidString))
+        let pendingRequests = await pendingNotificationRequests()
+        var identifiers = legacyAlarmIDs
+
+        for request in pendingRequests where isManagedRequest(request, legacyAlarmIDs: legacyAlarmIDs) {
+            identifiers.insert(request.identifier)
+        }
+
+        return Array(identifiers)
+    }
+
+    private func isManagedRequest(
+        _ request: UNNotificationRequest,
+        legacyAlarmIDs: Set<String>
+    ) -> Bool {
+        if legacyAlarmIDs.contains(request.identifier) {
+            return true
+        }
+
+        if request.identifier.hasPrefix(Self.weeklyIdentifierPrefix)
+            || request.identifier.hasPrefix(Self.onceIdentifierPrefix) {
+            return true
+        }
+
+        return request.content.userInfo[Self.managedNotificationKey] as? Bool == true
+    }
+
+    private func pendingNotificationRequests() async -> [UNNotificationRequest] {
+        await withCheckedContinuation { continuation in
+            center.getPendingNotificationRequests { requests in
+                continuation.resume(returning: requests)
+            }
+        }
+    }
+
+    private func add(request: UNNotificationRequest) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            center.add(request) { error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: ())
+                }
             }
         }
     }

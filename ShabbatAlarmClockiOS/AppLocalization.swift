@@ -189,6 +189,7 @@ struct AppStrings {
     var leaveRating: String { localized("settings.leave_rating") }
     var contact: String { localized("settings.contact") }
     var addAlarmAccessibilityLabel: String { localized("alarm.add") }
+    var deleteAlarm: String { localized("alarm.delete") }
     var noticeTitle: String { localized("notice.title") }
     var openSettings: String { localized("button.open_settings") }
     var allow: String { localized("button.allow") }

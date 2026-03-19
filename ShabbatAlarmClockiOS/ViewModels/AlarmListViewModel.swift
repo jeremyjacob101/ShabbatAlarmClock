@@ -33,6 +33,7 @@ final class AlarmListViewModel: ObservableObject {
     private let notificationService: NotificationService
     private let reminderPreferences: AlarmRingerReminderPreferences
     private var oneTimeAlarmExpirationTask: Task<Void, Never>?
+    private var notificationRefreshTask: Task<Void, Never>?
     private var pendingAlerts: [AlertItem] = []
     private var hasEvaluatedLaunchNotificationPrompt = false
 
@@ -64,6 +65,7 @@ final class AlarmListViewModel: ObservableObject {
         Task { @MainActor in
             let status = await refreshNotificationStatus()
             presentLaunchNotificationPromptIfNeeded(status: status)
+            await awaitNotificationRefresh(suppressAlert: true)
         }
     }
 
@@ -73,6 +75,7 @@ final class AlarmListViewModel: ObservableObject {
 
         Task { @MainActor in
             await refreshNotificationStatus()
+            await awaitNotificationRefresh(suppressAlert: true)
         }
     }
 
@@ -148,12 +151,7 @@ final class AlarmListViewModel: ObservableObject {
             presentRingerReminderIfNeeded()
 
             guard newAlarm.isEnabled else { return }
-
-            do {
-                try await notificationService.schedule(alarm: newAlarm)
-            } catch {
-                handleSchedulingError(for: newAlarm.id, error: error)
-            }
+            await awaitNotificationRefresh(failingAlarmID: newAlarm.id)
         }
     }
 
@@ -172,8 +170,6 @@ final class AlarmListViewModel: ObservableObject {
     ) {
         guard let index = alarms.firstIndex(where: { $0.id == id }) else { return }
 
-        notificationService.cancel(alarmID: id)
-
         alarms[index].time = time
         alarms[index].label = AppStrings.current.normalizedAlarmLabelInput(label)
         alarms[index].weekday = weekday
@@ -190,12 +186,8 @@ final class AlarmListViewModel: ObservableObject {
 
         guard updatedAlarm.isEnabled else { return }
 
-        Task {
-            do {
-                try await notificationService.schedule(alarm: updatedAlarm)
-            } catch {
-                handleSchedulingError(for: id, error: error)
-            }
+        Task { @MainActor in
+            await awaitNotificationRefresh(failingAlarmID: updatedAlarm.id)
         }
     }
 
@@ -224,12 +216,7 @@ final class AlarmListViewModel: ObservableObject {
 
                     let alarm = alarms[refreshedIndex]
                     persist()
-
-                    do {
-                        try await notificationService.schedule(alarm: alarm)
-                    } catch {
-                        handleSchedulingError(for: id, error: error)
-                    }
+                    await awaitNotificationRefresh(failingAlarmID: alarm.id)
                 case .failure(let error):
                     alarms[refreshedIndex].isEnabled = false
                     persist()
@@ -239,21 +226,32 @@ final class AlarmListViewModel: ObservableObject {
             }
         } else {
             alarms[index].isEnabled = false
-            notificationService.cancel(alarmID: id)
             persist()
+            scheduleNotificationRefresh(suppressAlert: true)
         }
     }
 
     func deleteAlarms(at offsets: IndexSet) {
-        let idsToCancel = offsets.map { alarms[$0].id }
-        notificationService.cancelAll(ids: idsToCancel)
-
         // Avoid remove(atOffsets:) so ViewModel doesn't need SwiftUI import
         for index in offsets.sorted(by: >) {
             alarms.remove(at: index)
         }
 
         persist()
+        scheduleNotificationRefresh(suppressAlert: true)
+    }
+
+    func deleteAlarm(id: UUID) {
+        guard let index = alarms.firstIndex(where: { $0.id == id }) else { return }
+
+        alarms.remove(at: index)
+
+        if editingAlarm?.id == id {
+            editingAlarm = nil
+        }
+
+        persist()
+        scheduleNotificationRefresh(suppressAlert: true)
     }
 
     func dismissActiveAlert() {
@@ -276,26 +274,40 @@ final class AlarmListViewModel: ObservableObject {
         let enabledAlarms = alarms.filter(\.isEnabled)
         guard !enabledAlarms.isEmpty else { return }
 
-        notificationService.cancelAll(ids: enabledAlarms.map(\.id))
-
-        Task {
-            for alarm in enabledAlarms {
-                do {
-                    try await notificationService.schedule(alarm: alarm)
-                } catch {
-                    handleSchedulingError(for: alarm.id, error: error)
-                }
-            }
-        }
+        scheduleNotificationRefresh(suppressAlert: true)
     }
 
-    private func handleSchedulingError(for alarmID: UUID, error: Error) {
-        if let index = alarms.firstIndex(where: { $0.id == alarmID }) {
+    private func handleNotificationRefreshFailure(
+        for alarmID: UUID?,
+        error: Error,
+        suppressAlert: Bool
+    ) async {
+        if let alarmID, let index = alarms.firstIndex(where: { $0.id == alarmID }) {
             alarms[index].isEnabled = false
+            if !alarms[index].repeatsWeekly {
+                alarms[index].scheduledDate = nil
+            }
             persist()
         }
-        print("Failed to schedule alarm: \(error)")
-        presentAlert(AppStrings.current.notificationSchedulingFailed)
+
+        print("Failed to refresh notification schedule: \(error)")
+
+        if !suppressAlert {
+            presentAlert(AppStrings.current.notificationSchedulingFailed)
+        }
+
+        guard alarmID != nil else { return }
+
+        do {
+            try await notificationService.replaceScheduledNotifications(
+                for: enabledAlarms,
+                knownAlarmIDs: alarms.map(\.id)
+            )
+        } catch is CancellationError {
+            return
+        } catch {
+            print("Failed to restore notification schedule after disabling alarm: \(error)")
+        }
     }
 
     private func persist() {
@@ -365,7 +377,6 @@ final class AlarmListViewModel: ObservableObject {
                scheduledDate <= now {
                 alarms[index].isEnabled = false
                 alarms[index].scheduledDate = nil
-                notificationService.cancel(alarmID: alarms[index].id)
                 didChange = true
             } else if alarms[index].isEnabled,
                       alarms[index].scheduledDate == nil {
@@ -377,6 +388,7 @@ final class AlarmListViewModel: ObservableObject {
         if didChange {
             alarms.sort(by: sortAlarms)
             persist()
+            scheduleNotificationRefresh(suppressAlert: true)
         } else {
             scheduleNextOneTimeAlarmExpiration()
         }
@@ -432,6 +444,62 @@ final class AlarmListViewModel: ObservableObject {
         }
     }
 
+    private var enabledAlarms: [Alarm] {
+        alarms.filter(\.isEnabled)
+    }
+
+    private func awaitNotificationRefresh(
+        failingAlarmID: UUID? = nil,
+        suppressAlert: Bool = false
+    ) async {
+        notificationRefreshTask?.cancel()
+        notificationRefreshTask = nil
+        await refreshNotifications(
+            failingAlarmID: failingAlarmID,
+            suppressAlert: suppressAlert
+        )
+    }
+
+    private func scheduleNotificationRefresh(
+        failingAlarmID: UUID? = nil,
+        suppressAlert: Bool = false
+    ) {
+        notificationRefreshTask?.cancel()
+        notificationRefreshTask = Task { @MainActor [weak self] in
+            await self?.refreshNotifications(
+                failingAlarmID: failingAlarmID,
+                suppressAlert: suppressAlert
+            )
+        }
+    }
+
+    private func refreshNotifications(
+        failingAlarmID: UUID? = nil,
+        suppressAlert: Bool = false
+    ) async {
+        do {
+            try await notificationService.replaceScheduledNotifications(
+                for: enabledAlarms,
+                knownAlarmIDs: alarms.map(\.id)
+            )
+        } catch is CancellationError {
+            return
+        } catch NotificationServiceError.notAuthorized {
+            await notificationService.clearManagedNotifications(knownAlarmIDs: alarms.map(\.id))
+            await handleNotificationRefreshFailure(
+                for: failingAlarmID,
+                error: NotificationServiceError.notAuthorized,
+                suppressAlert: suppressAlert
+            )
+        } catch {
+            await handleNotificationRefreshFailure(
+                for: failingAlarmID,
+                error: error,
+                suppressAlert: suppressAlert
+            )
+        }
+    }
+
     private func sortAlarms(_ lhs: Alarm, _ rhs: Alarm) -> Bool {
         if lhs.weekday != rhs.weekday {
             return lhs.weekday < rhs.weekday
@@ -444,7 +512,11 @@ final class AlarmListViewModel: ObservableObject {
         let lMinutes = (l.hour ?? 0) * 60 + (l.minute ?? 0)
         let rMinutes = (r.hour ?? 0) * 60 + (r.minute ?? 0)
 
-        return lMinutes < rMinutes
+        if lMinutes != rMinutes {
+            return lMinutes < rMinutes
+        }
+
+        return lhs.id.uuidString < rhs.id.uuidString
     }
 
 }

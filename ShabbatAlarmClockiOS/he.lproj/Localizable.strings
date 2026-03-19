@@ -1,5 +1,6 @@
 "alarm.default_label" = "שעון מעורר";
 "alarm.add" = "הוספת שעון מעורר";
+"alarm.delete" = "מחקו שעון מעורר";
 "alarm.edit.title" = "עריכת שעון מעורר";
 "alarm.new.title" = "שעון מעורר חדש";
 

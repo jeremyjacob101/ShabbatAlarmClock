@@ -6,6 +6,7 @@ struct AlarmListView: View {
     @EnvironmentObject private var localization: AppLocalizationController
     @Binding var selectedTheme: AppTheme
     @StateObject private var viewModel = AlarmListViewModel()
+    @State private var pendingDeletedAlarmID: UUID?
     @Environment(\.openURL) private var openURL
     @Environment(\.requestReview) private var requestReview
     @Environment(\.scenePhase) private var scenePhase
@@ -138,8 +139,13 @@ struct AlarmListView: View {
                     )
                 }
             }
-            .sheet(item: $viewModel.editingAlarm) { alarm in
-                AddAlarmView(alarm: alarm) { time, label, weekday, sound, soundDurationSeconds, repeatsWeekly in
+            .sheet(item: $viewModel.editingAlarm, onDismiss: handleEditAlarmDismiss) { alarm in
+                AddAlarmView(
+                    alarm: alarm,
+                    onDelete: {
+                        pendingDeletedAlarmID = alarm.id
+                    }
+                ) { time, label, weekday, sound, soundDurationSeconds, repeatsWeekly in
                     viewModel.updateAlarm(
                         id: alarm.id,
                         time: time,
@@ -250,6 +256,12 @@ struct AlarmListView: View {
         if let emailURL = components.url {
             openURL(emailURL)
         }
+    }
+
+    private func handleEditAlarmDismiss() {
+        guard let pendingDeletedAlarmID else { return }
+        self.pendingDeletedAlarmID = nil
+        viewModel.deleteAlarm(id: pendingDeletedAlarmID)
     }
 }
 

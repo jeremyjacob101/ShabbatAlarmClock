@@ -40,9 +40,14 @@ struct AddAlarmView: View {
     private let reminderPreferences = AlarmRingerReminderPreferences()
     private let soundPreviewPlayer = AlarmSoundPreviewPlayer.shared
 
+    let onDelete: (() -> Void)?
     let onSave: (Date, String, Int, AlarmSound, Int, Bool) -> Void
 
-    init(alarm: Alarm? = nil, onSave: @escaping (Date, String, Int, AlarmSound, Int, Bool) -> Void) {
+    init(
+        alarm: Alarm? = nil,
+        onDelete: (() -> Void)? = nil,
+        onSave: @escaping (Date, String, Int, AlarmSound, Int, Bool) -> Void
+    ) {
         let strings = AppStrings.current
         let initialAlarm = alarm ?? Alarm(
             time: Self.defaultAlarmTime(),
@@ -59,6 +64,7 @@ struct AddAlarmView: View {
         _soundDurationSeconds = State(initialValue: initialAlarm.soundDurationSeconds)
         _repeatsWeekly = State(initialValue: initialAlarm.repeatsWeekly)
         isEditing = alarm != nil
+        self.onDelete = onDelete
         self.onSave = onSave
     }
 
@@ -80,6 +86,10 @@ struct AddAlarmView: View {
 
     private var fixedScreenOrderLayoutDirection: LayoutDirection {
         .leftToRight
+    }
+
+    private var showsDeleteButton: Bool {
+        isEditing && onDelete != nil
     }
 
     var body: some View {
@@ -148,9 +158,24 @@ struct AddAlarmView: View {
                 } header: {
                     sectionHeader(strings.labelSection)
                 }
+
+                if showsDeleteButton {
+                    Section {
+                        Button(action: handleDeleteButtonTap) {
+                            Text(strings.deleteAlarm)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .multilineTextAlignment(.center)
+                        }
+                        .buttonStyle(DeleteAlarmButtonStyle())
+                        .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                    }
+                }
             }
             .environment(\.layoutDirection, localization.layoutDirection)
             .id("add-alarm-form-\(localization.language.rawValue)")
+            .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.immediately)
             .background(
                 KeyboardDismissTapInstaller {
@@ -401,6 +426,13 @@ struct AddAlarmView: View {
         .frame(maxWidth: .infinity, minHeight: 22, alignment: isRightToLeft ? .trailing : .leading)
     }
 
+    private func handleDeleteButtonTap() {
+        dismissKeyboard()
+        stopSoundPreview()
+        onDelete?()
+        dismiss()
+    }
+
     private func handleTestSoundButtonTap() {
         dismissKeyboard()
 
@@ -481,6 +513,34 @@ struct AddAlarmView: View {
 
     private func dismissKeyboard() {
         isLabelFieldFocused = false
+    }
+}
+
+private struct DeleteAlarmButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.medium))
+            .foregroundStyle(Color(uiColor: .systemRed))
+            .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .padding(.vertical, 18)
+            .padding(.horizontal, 20)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(
+                        Color(
+                            uiColor: configuration.isPressed
+                                ? .secondarySystemFill
+                                : .secondarySystemBackground
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .stroke(Color.white.opacity(configuration.isPressed ? 0.10 : 0.04), lineWidth: 1)
+                    )
+            )
+            .scaleEffect(configuration.isPressed ? 1.015 : 1.0)
+            .brightness(configuration.isPressed ? 0.03 : 0)
+            .animation(.spring(response: 0.18, dampingFraction: 0.82), value: configuration.isPressed)
     }
 }
 

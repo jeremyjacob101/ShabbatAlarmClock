@@ -66,5 +66,27 @@ struct KeyboardDismissTapInstaller: UIViewRepresentable {
         ) -> Bool {
             true
         }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldReceive touch: UITouch
+        ) -> Bool {
+            guard let touchedView = touch.view else { return true }
+            return !isTextInputView(touchedView)
+        }
+
+        private func isTextInputView(_ view: UIView) -> Bool {
+            var currentView: UIView? = view
+
+            while let unwrappedView = currentView {
+                if unwrappedView is UITextField || unwrappedView is UITextView {
+                    return true
+                }
+
+                currentView = unwrappedView.superview
+            }
+
+            return false
+        }
     }
 }

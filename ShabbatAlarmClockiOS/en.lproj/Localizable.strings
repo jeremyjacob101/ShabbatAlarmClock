@@ -1,5 +1,6 @@
 "alarm.default_label" = "Alarm";
 "alarm.add" = "Add alarm";
+"alarm.delete" = "Delete Alarm";
 "alarm.edit.title" = "Edit Alarm";
 "alarm.new.title" = "New Alarm";
 
