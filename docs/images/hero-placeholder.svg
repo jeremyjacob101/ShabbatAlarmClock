@@ -1,0 +1,66 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="170" y1="94" x2="1459" y2="787" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset="0.55" stop-color="#102A43"/>
+      <stop offset="1" stop-color="#0B3B5D"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="357" y1="158" x2="1245" y2="742" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.06"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="1058" y1="228" x2="1171" y2="600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#60A5FA"/>
+      <stop offset="1" stop-color="#22C55E"/>
+    </linearGradient>
+    <filter id="shadow" x="255" y="111" width="1090" height="678" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="24"/>
+      <feGaussianBlur stdDeviation="36"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.0117647 0 0 0 0 0.0705882 0 0 0 0 0.152941 0 0 0 0.45 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" rx="42" fill="url(#bg)"/>
+  <circle cx="1340" cy="140" r="220" fill="#38BDF8" fill-opacity="0.08"/>
+  <circle cx="220" cy="760" r="260" fill="#22C55E" fill-opacity="0.10"/>
+  <circle cx="1410" cy="720" r="170" fill="#F59E0B" fill-opacity="0.08"/>
+
+  <g filter="url(#shadow)">
+    <rect x="327" y="159" width="946" height="534" rx="34" fill="url(#panel)" stroke="#FFFFFF" stroke-opacity="0.18"/>
+    <rect x="384" y="218" width="338" height="418" rx="30" fill="#071A2E" stroke="#FFFFFF" stroke-opacity="0.1"/>
+    <rect x="878" y="218" width="338" height="418" rx="30" fill="#081A2B" stroke="#FFFFFF" stroke-opacity="0.1"/>
+
+    <rect x="444" y="245" width="218" height="18" rx="9" fill="#E2E8F0" fill-opacity="0.85"/>
+    <rect x="444" y="283" width="140" height="12" rx="6" fill="#94A3B8" fill-opacity="0.7"/>
+    <rect x="444" y="329" width="218" height="84" rx="22" fill="#0F2742"/>
+    <rect x="468" y="352" width="132" height="26" rx="13" fill="#93C5FD"/>
+    <rect x="468" y="386" width="96" height="13" rx="6.5" fill="#CBD5E1" fill-opacity="0.7"/>
+    <rect x="444" y="431" width="218" height="84" rx="22" fill="#0F2742"/>
+    <rect x="468" y="454" width="154" height="26" rx="13" fill="#86EFAC"/>
+    <rect x="468" y="488" width="118" height="13" rx="6.5" fill="#CBD5E1" fill-opacity="0.7"/>
+    <rect x="444" y="533" width="218" height="58" rx="18" fill="#0F2742"/>
+    <rect x="468" y="554" width="126" height="18" rx="9" fill="#FDE68A"/>
+
+    <rect x="938" y="245" width="218" height="18" rx="9" fill="#E2E8F0" fill-opacity="0.85"/>
+    <rect x="938" y="283" width="120" height="12" rx="6" fill="#94A3B8" fill-opacity="0.7"/>
+    <rect x="938" y="327" width="218" height="210" rx="24" fill="#0E2840"/>
+    <rect x="975" y="360" width="144" height="144" rx="72" fill="url(#accent)" fill-opacity="0.95"/>
+    <rect x="938" y="559" width="218" height="24" rx="12" fill="#CBD5E1" fill-opacity="0.72"/>
+    <rect x="982" y="607" width="130" height="14" rx="7" fill="#94A3B8" fill-opacity="0.7"/>
+  </g>
+
+  <text x="800" y="112" fill="#F8FAFC" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="48" font-weight="700" text-anchor="middle">
+    Add one polished app screenshot here
+  </text>
+  <text x="800" y="760" fill="#E2E8F0" font-family="SF Pro Text, Helvetica, Arial, sans-serif" font-size="30" font-weight="600" text-anchor="middle">
+    Suggested image: the main alarm list with 3-4 sample alarms and your preferred accent color
+  </text>
+  <text x="800" y="807" fill="#93C5FD" font-family="SF Mono, Menlo, Monaco, Consolas, monospace" font-size="24" text-anchor="middle">
+    docs/images/hero-screenshot.png
+  </text>
+</svg>
