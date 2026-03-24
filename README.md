@@ -19,17 +19,11 @@
 > Most alarm apps assume tomorrow looks like yesterday.
 > Shabbat Alarm Clock is built for a different rhythm: choose the day, choose the sound, decide whether it repeats, and keep the experience simple.
 
-<table align="center">
-  <tr>
-    <td>
-      <img src="docs/images/screenshot-left.png" alt="Shabbat Alarm Clock screenshot left" width="210">
-    </td>
-    <td width="50"></td>
-    <td>
-      <img src="docs/images/screenshot-right.png" alt="Shabbat Alarm Clock screenshot right" width="210">
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/images/screenshot-left.png" alt="Shabbat Alarm Clock screenshot left" width="210">
+  <img src="docs/images/spacer-50.svg" alt="" width="50" height="1">
+  <img src="docs/images/screenshot-right.png" alt="Shabbat Alarm Clock screenshot right" width="210">
+</p>
 
 ## Overview
 
