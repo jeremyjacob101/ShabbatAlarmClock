@@ -20,6 +20,10 @@
 > Shabbat Alarm Clock is built for a different rhythm: choose the day, choose the sound, decide whether it repeats, and keep the experience simple.
 
 <p align="center">
+  <a href="https://apps.apple.com/us/app/shabbat-alarm-clock/id6759681065">Take me there →</a>
+</p>
+
+<p align="center">
   <img src="docs/images/screenshot-left.png" alt="Shabbat Alarm Clock screenshot left" width="210">
   <img src="docs/images/spacer-50.svg" alt="" width="50" height="1">
   <img src="docs/images/screenshot-right.png" alt="Shabbat Alarm Clock screenshot right" width="210">
