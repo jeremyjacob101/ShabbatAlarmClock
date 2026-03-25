@@ -6,7 +6,7 @@
 
 "alarms.title" = "שעוני מעורר";
 "alarms.empty.title" = "עדיין אין שעוני מעורר";
-"alarms.empty.message" = "הקשו על + כדי ליצור את השעון המעורר הראשון.";
+"alarms.empty.message" = "הקישו על + כדי ליצור את השעון המעורר הראשון.";
 
 "settings.title" = "הגדרות";
 "settings.notifications.enable" = "הפעלת התראות";
