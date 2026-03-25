@@ -286,6 +286,10 @@ struct AppStrings {
         formatted("duration.short", seconds)
     }
 
+    func displayedAlarmTime(_ time: Date) -> String {
+        DateFormatter.alarmTime(locale: language.locale).string(from: time)
+    }
+
     func accessibilityDuration(_ seconds: Int) -> String {
         formatted("duration.accessibility", seconds)
     }

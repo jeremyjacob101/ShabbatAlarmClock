@@ -68,7 +68,7 @@
 "errors.notifications.not_authorized" = "Notifications are not authorized. Please enable them in Settings.";
 "errors.notifications.invalid_trigger_date" = "Couldn’t determine the next time for this alarm.";
 
-"theme.black" = "Black";
+"theme.standard" = "Standard";
 "theme.blue" = "Blue";
 "theme.teal" = "Teal";
 "theme.green" = "Green";

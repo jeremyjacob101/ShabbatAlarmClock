@@ -4,6 +4,7 @@ import UIKit
 
 struct AlarmListView: View {
     @EnvironmentObject private var localization: AppLocalizationController
+    @Environment(\.colorScheme) private var colorScheme
     @Binding var selectedTheme: AppTheme
     @StateObject private var viewModel = AlarmListViewModel()
     @State private var pendingDeletedAlarmID: UUID?
@@ -91,7 +92,10 @@ struct AlarmListView: View {
                                     Label {
                                         Text(theme.displayName(in: localization.language))
                                     } icon: {
-                                        theme.menuSwatch(isSelected: selectedTheme == theme)
+                                        theme.menuSwatch(
+                                            isSelected: selectedTheme == theme,
+                                            colorScheme: colorScheme
+                                        )
                                     }
                                 }
                             }
@@ -138,6 +142,11 @@ struct AlarmListView: View {
                         repeatsWeekly: repeatsWeekly
                     )
                 }
+                .environmentObject(localization)
+                .environment(\.locale, localization.locale)
+                .environment(\.calendar, localization.calendar)
+                .environment(\.layoutDirection, localization.layoutDirection)
+                .id("add-alarm-sheet-\(localization.language.rawValue)")
             }
             .sheet(item: $viewModel.editingAlarm, onDismiss: handleEditAlarmDismiss) { alarm in
                 AddAlarmView(
@@ -156,6 +165,11 @@ struct AlarmListView: View {
                         repeatsWeekly: repeatsWeekly
                     )
                 }
+                .environmentObject(localization)
+                .environment(\.locale, localization.locale)
+                .environment(\.calendar, localization.calendar)
+                .environment(\.layoutDirection, localization.layoutDirection)
+                .id("edit-alarm-sheet-\(localization.language.rawValue)-\(alarm.id.uuidString)")
             }
             .alert(item: $viewModel.activeAlert) { alert in
                 switch alert.kind {

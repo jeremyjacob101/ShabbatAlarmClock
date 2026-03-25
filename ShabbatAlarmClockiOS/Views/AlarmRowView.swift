@@ -44,7 +44,7 @@ struct AlarmRowView: View {
     private var alarmDetailsButton: some View {
         Button(action: onEdit) {
             VStack(alignment: isRightToLeft ? .trailing : .leading, spacing: 6) {
-                Text(alarm.time, format: .dateTime.hour().minute())
+                Text(localization.strings.displayedAlarmTime(alarm.time))
                     .font(.system(size: 34, weight: .medium, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(themeColor)

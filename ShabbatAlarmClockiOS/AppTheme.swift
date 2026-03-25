@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 enum AppTheme: String, CaseIterable, Identifiable {
-    case black
+    case standard = "black"
     case blue
     case teal
     case green
@@ -19,7 +19,7 @@ enum AppTheme: String, CaseIterable, Identifiable {
 
     static func resolve(storedValue: String) -> AppTheme {
         if storedValue == "white" {
-            return .black
+            return .standard
         }
 
         return AppTheme(rawValue: storedValue) ?? .defaultTheme
@@ -27,8 +27,8 @@ enum AppTheme: String, CaseIterable, Identifiable {
 
     var localizationKey: String {
         switch self {
-        case .black:
-            return "theme.black"
+        case .standard:
+            return "theme.standard"
         case .blue:
             return "theme.blue"
         case .teal:
@@ -56,15 +56,19 @@ enum AppTheme: String, CaseIterable, Identifiable {
         Color(uiColor: uiColor)
     }
 
-    func menuSwatch(isSelected: Bool) -> Image {
-        Image(uiImage: menuSwatchImage(isSelected: isSelected))
+    func menuSwatch(isSelected: Bool, colorScheme: ColorScheme) -> Image {
+        Image(uiImage: menuSwatchImage(isSelected: isSelected, colorScheme: colorScheme))
             .renderingMode(.original)
     }
 
     private var uiColor: UIColor {
         switch self {
-        case .black:
-            return UIColor(white: 0.08, alpha: 1.0)
+        case .standard:
+            return UIColor { traitCollection in
+                traitCollection.userInterfaceStyle == .dark
+                    ? .white
+                    : UIColor(white: 0.08, alpha: 1.0)
+            }
         case .blue:
             return .systemBlue
         case .teal:
@@ -84,9 +88,12 @@ enum AppTheme: String, CaseIterable, Identifiable {
         }
     }
 
-    private func menuSwatchImage(isSelected: Bool) -> UIImage {
+    private func menuSwatchImage(isSelected: Bool, colorScheme: ColorScheme) -> UIImage {
         let size = CGSize(width: 18, height: 18)
         let renderer = UIGraphicsImageRenderer(size: size)
+        let traitCollection = UITraitCollection(
+            userInterfaceStyle: colorScheme == .dark ? .dark : .light
+        )
 
         return renderer.image { _ in
             let inset = isSelected ? 1.5 : 2.5
@@ -96,21 +103,23 @@ enum AppTheme: String, CaseIterable, Identifiable {
             if isSelected {
                 let ringRect = CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5)
                 let ringPath = UIBezierPath(ovalIn: ringRect)
-                let ringColor = UIColor.white.withAlphaComponent(0.85)
-                ringColor.setStroke()
+                UIColor.white.withAlphaComponent(0.85).setStroke()
                 ringPath.lineWidth = 1
                 ringPath.stroke()
             }
 
-            uiColor.setFill()
+            uiColor.resolvedColor(with: traitCollection).setFill()
             path.fill()
 
-            let borderColor = self == .black
-                ? UIColor.white.withAlphaComponent(0.28)
-                : UIColor.black.withAlphaComponent(0.18)
-            borderColor.setStroke()
+            menuSwatchBorderUIColor(for: colorScheme).setStroke()
             path.lineWidth = 0.75
             path.stroke()
         }
+    }
+
+    private func menuSwatchBorderUIColor(for colorScheme: ColorScheme) -> UIColor {
+        self == .standard && colorScheme != .dark
+            ? UIColor.white.withAlphaComponent(0.28)
+            : UIColor.black.withAlphaComponent(0.18)
     }
 }

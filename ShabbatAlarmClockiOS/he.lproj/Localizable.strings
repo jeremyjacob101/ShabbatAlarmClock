@@ -68,7 +68,7 @@
 "errors.notifications.not_authorized" = "ההתראות לא מורשות. הפעילו אותן בהגדרות.";
 "errors.notifications.invalid_trigger_date" = "לא ניתן לקבוע את הזמן הבא לשעון המעורר הזה.";
 
-"theme.black" = "שחור";
+"theme.standard" = "רגיל";
 "theme.blue" = "כחול";
 "theme.teal" = "טורקיז";
 "theme.green" = "ירוק";
