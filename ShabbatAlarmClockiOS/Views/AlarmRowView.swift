@@ -51,21 +51,39 @@ struct AlarmRowView: View {
                     .frame(maxWidth: .infinity, alignment: isRightToLeft ? .trailing : .leading)
 
                 HStack(spacing: 6) {
-                    if alarm.autoSnoozeEnabled {
-                        Image(systemName: "moon.zzz")
+                    if isRightToLeft {
+                        Text(weekdayName)
                             .font(.footnote)
-                            .foregroundStyle(themeColor)
-                    }
+                            .foregroundStyle(.secondary)
 
-                    if alarm.repeatsWeekly {
-                        Image(systemName: "repeat")
+                        if alarm.repeatsWeekly {
+                            Image(systemName: "repeat")
+                                .font(.footnote)
+                                .foregroundStyle(themeColor)
+                        }
+
+                        if alarm.autoSnoozeEnabled {
+                            Image(systemName: "moon.zzz")
+                                .font(.footnote)
+                                .foregroundStyle(themeColor)
+                        }
+                    } else {
+                        if alarm.autoSnoozeEnabled {
+                            Image(systemName: "moon.zzz")
+                                .font(.footnote)
+                                .foregroundStyle(themeColor)
+                        }
+
+                        if alarm.repeatsWeekly {
+                            Image(systemName: "repeat")
+                                .font(.footnote)
+                                .foregroundStyle(themeColor)
+                        }
+
+                        Text(weekdayName)
                             .font(.footnote)
-                            .foregroundStyle(themeColor)
+                            .foregroundStyle(.secondary)
                     }
-
-                    Text(weekdayName)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: isRightToLeft ? .trailing : .leading)
 

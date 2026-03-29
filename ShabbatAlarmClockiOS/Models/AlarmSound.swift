@@ -27,7 +27,7 @@ enum AlarmSound: String, CaseIterable, Codable, Identifiable {
     }
 
     func bundledFileURL(durationSeconds: Int) -> URL? {
-        bundleURL(resource: louderVariantResourceName(durationSeconds: durationSeconds))
+        return bundleURL(resource: louderVariantResourceName(durationSeconds: durationSeconds))
     }
 
     func notificationSoundName(durationSeconds: Int) -> String? {

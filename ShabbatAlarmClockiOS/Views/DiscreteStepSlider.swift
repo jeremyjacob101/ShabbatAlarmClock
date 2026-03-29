@@ -33,6 +33,7 @@ struct DiscreteStepSlider: View {
                 language: localization.language
             )
             .frame(height: 31)
+            .id("native-discrete-slider-\(localization.language.rawValue)")
 
             TickMarkRow(
                 steps: steps,
@@ -80,7 +81,8 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
         slider.steps = steps
         slider.isContinuous = true
         slider.accessibilityLabel = accessibilityLabel
-        slider.semanticContentAttribute = language.semanticContentAttribute
+        slider.semanticContentAttribute = .forceLeftToRight
+        slider.applyLayoutDirection(language.layoutDirection)
         slider.updateAccessibilityValue(with: clampedStep(for: value), strings: AppStrings(language: language))
         slider.setValue(sliderValue(for: value), animated: false)
         slider.addTarget(
@@ -106,7 +108,8 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
         context.coordinator.parent = self
         uiView.steps = steps
         uiView.accessibilityLabel = accessibilityLabel
-        uiView.semanticContentAttribute = language.semanticContentAttribute
+        uiView.semanticContentAttribute = .forceLeftToRight
+        uiView.applyLayoutDirection(language.layoutDirection)
 
         let snappedValue = clampedStep(for: value)
         let snappedSliderValue = sliderValue(for: snappedValue)
@@ -204,6 +207,7 @@ private struct NativeDiscreteSlider: UIViewRepresentable {
 
 private final class StepTrackingSlider: UISlider {
     private let endpointStepPadding: Float = 0.001
+    private var layoutDirectionOverride: LayoutDirection = .leftToRight
 
     var steps: [Int] = [0] {
         didSet {
@@ -232,6 +236,13 @@ private final class StepTrackingSlider: UISlider {
         Float(min(max(index, 0), max(steps.count - 1, 0)))
     }
 
+    func applyLayoutDirection(_ layoutDirection: LayoutDirection) {
+        layoutDirectionOverride = layoutDirection
+        transform = layoutDirection == .rightToLeft
+            ? CGAffineTransform(scaleX: -1, y: 1)
+            : .identity
+    }
+
     func updateAccessibilityValue(with stepValue: Int, strings: AppStrings) {
         accessibilityValue = strings.accessibilityDuration(stepValue)
     }
@@ -239,11 +250,15 @@ private final class StepTrackingSlider: UISlider {
     func reportStepPositions() {
         let track = trackRect(forBounds: bounds)
         let positions = steps.indices.map { index in
-            thumbRect(
+            let logicalPosition = thumbRect(
                 forBounds: bounds,
                 trackRect: track,
                 value: sliderValue(forStepIndex: index)
             ).midX
+
+            return layoutDirectionOverride == .rightToLeft
+                ? bounds.width - logicalPosition
+                : logicalPosition
         }
 
         onStepPositionsChanged?(positions)
