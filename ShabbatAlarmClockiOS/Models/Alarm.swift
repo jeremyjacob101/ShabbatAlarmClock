@@ -4,6 +4,7 @@ struct Alarm: Identifiable, Codable, Equatable {
     static let supportedSoundDurations = [5, 10, 15, 20]
     static let soundDurationRange = supportedSoundDurations.first!...supportedSoundDurations.last!
     static let defaultSoundDurationSeconds = supportedSoundDurations[supportedSoundDurations.count / 2]
+    static let autoSnoozeMinutes = 5
 
     let id: UUID
     var time: Date
@@ -13,6 +14,7 @@ struct Alarm: Identifiable, Codable, Equatable {
     var sound: AlarmSound
     var soundDurationSeconds: Int
     var repeatsWeekly: Bool
+    var autoSnoozeEnabled: Bool
     var scheduledDate: Date?
 
     init(
@@ -24,6 +26,7 @@ struct Alarm: Identifiable, Codable, Equatable {
         sound: AlarmSound = .defaultSound,
         soundDurationSeconds: Int = Alarm.defaultSoundDurationSeconds,
         repeatsWeekly: Bool = true,
+        autoSnoozeEnabled: Bool = false,
         scheduledDate: Date? = nil
     ) {
         self.id = id
@@ -34,6 +37,7 @@ struct Alarm: Identifiable, Codable, Equatable {
         self.sound = sound
         self.soundDurationSeconds = Alarm.clampedSoundDuration(soundDurationSeconds)
         self.repeatsWeekly = repeatsWeekly
+        self.autoSnoozeEnabled = autoSnoozeEnabled
         self.scheduledDate = repeatsWeekly ? nil : scheduledDate
     }
 
@@ -46,6 +50,7 @@ struct Alarm: Identifiable, Codable, Equatable {
         case sound
         case soundDurationSeconds
         case repeatsWeekly
+        case autoSnoozeEnabled
         case scheduledDate
     }
 
@@ -63,6 +68,10 @@ struct Alarm: Identifiable, Codable, Equatable {
             forKey: .soundDurationSeconds
         ) ?? Self.defaultSoundDurationSeconds
         let repeatsWeekly = try container.decodeIfPresent(Bool.self, forKey: .repeatsWeekly) ?? true
+        let autoSnoozeEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .autoSnoozeEnabled
+        ) ?? false
         let scheduledDate = try container.decodeIfPresent(Date.self, forKey: .scheduledDate)
 
         self.init(
@@ -74,6 +83,7 @@ struct Alarm: Identifiable, Codable, Equatable {
             sound: sound,
             soundDurationSeconds: soundDurationSeconds,
             repeatsWeekly: repeatsWeekly,
+            autoSnoozeEnabled: autoSnoozeEnabled,
             scheduledDate: scheduledDate
         )
     }
@@ -90,6 +100,52 @@ struct Alarm: Identifiable, Codable, Equatable {
             repeatedTimePolicy: .first,
             direction: .forward
         )
+    }
+
+    func primaryFireDate(referenceDate: Date = Date(), calendar: Calendar = .current) -> Date? {
+        if repeatsWeekly {
+            return nextTriggerDate(referenceDate: referenceDate, calendar: calendar)
+        }
+
+        return scheduledDate ?? nextTriggerDate(referenceDate: referenceDate, calendar: calendar)
+    }
+
+    func notificationFireDates(
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> [Date] {
+        guard let primaryFireDate = primaryFireDate(
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) else {
+            return []
+        }
+
+        return notificationFireDates(primaryFireDate: primaryFireDate, calendar: calendar)
+    }
+
+    func notificationFireDates(
+        primaryFireDate: Date,
+        calendar: Calendar = .current
+    ) -> [Date] {
+        var fireDates = [primaryFireDate]
+
+        if autoSnoozeEnabled,
+           let snoozeDate = calendar.date(
+                byAdding: .minute,
+                value: Self.autoSnoozeMinutes,
+                to: primaryFireDate
+           ) {
+            fireDates.append(snoozeDate)
+        }
+
+        return fireDates
+    }
+
+    func oneTimeExpirationDate(referenceDate: Date = Date(), calendar: Calendar = .current) -> Date? {
+        guard !repeatsWeekly else { return nil }
+
+        return notificationFireDates(referenceDate: referenceDate, calendar: calendar).last
     }
 
     private static func normalizedWeekday(_ weekday: Int, fallbackDate: Date) -> Int {

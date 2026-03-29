@@ -112,7 +112,8 @@ final class AlarmListViewModel: ObservableObject {
         weekday: Int,
         sound: AlarmSound,
         soundDurationSeconds: Int,
-        repeatsWeekly: Bool
+        repeatsWeekly: Bool,
+        autoSnoozeEnabled: Bool
     ) {
         Task {
             let strings = AppStrings.current
@@ -138,7 +139,8 @@ final class AlarmListViewModel: ObservableObject {
                 weekday: weekday,
                 sound: sound,
                 soundDurationSeconds: soundDurationSeconds,
-                repeatsWeekly: repeatsWeekly
+                repeatsWeekly: repeatsWeekly,
+                autoSnoozeEnabled: autoSnoozeEnabled
             )
 
             if !repeatsWeekly {
@@ -166,7 +168,8 @@ final class AlarmListViewModel: ObservableObject {
         weekday: Int,
         sound: AlarmSound,
         soundDurationSeconds: Int,
-        repeatsWeekly: Bool
+        repeatsWeekly: Bool,
+        autoSnoozeEnabled: Bool
     ) {
         guard let index = alarms.firstIndex(where: { $0.id == id }) else { return }
 
@@ -176,6 +179,7 @@ final class AlarmListViewModel: ObservableObject {
         alarms[index].sound = sound
         alarms[index].soundDurationSeconds = Alarm.clampedSoundDuration(soundDurationSeconds)
         alarms[index].repeatsWeekly = repeatsWeekly
+        alarms[index].autoSnoozeEnabled = autoSnoozeEnabled
         alarms[index].scheduledDate = repeatsWeekly ? nil : alarms[index].nextTriggerDate()
 
         let updatedAlarm = alarms[index]
@@ -373,8 +377,8 @@ final class AlarmListViewModel: ObservableObject {
             guard !alarms[index].repeatsWeekly else { continue }
 
             if alarms[index].isEnabled,
-               let scheduledDate = alarms[index].scheduledDate,
-               scheduledDate <= now {
+               let expirationDate = alarms[index].oneTimeExpirationDate(referenceDate: now),
+               expirationDate <= now {
                 alarms[index].isEnabled = false
                 alarms[index].scheduledDate = nil
                 didChange = true
@@ -398,10 +402,12 @@ final class AlarmListViewModel: ObservableObject {
         oneTimeAlarmExpirationTask?.cancel()
         oneTimeAlarmExpirationTask = nil
 
-        guard let nextFireDate = alarms
-            .filter({ $0.isEnabled && !$0.repeatsWeekly })
-            .compactMap(\.scheduledDate)
-            .min()
+        guard let nextFireDate = (
+            alarms
+                .filter({ $0.isEnabled && !$0.repeatsWeekly })
+                .compactMap { $0.oneTimeExpirationDate() }
+                .min()
+        )
         else {
             return
         }

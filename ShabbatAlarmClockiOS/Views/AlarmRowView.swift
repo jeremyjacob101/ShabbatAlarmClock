@@ -51,6 +51,12 @@ struct AlarmRowView: View {
                     .frame(maxWidth: .infinity, alignment: isRightToLeft ? .trailing : .leading)
 
                 HStack(spacing: 6) {
+                    if alarm.autoSnoozeEnabled {
+                        Image(systemName: "moon.zzz")
+                            .font(.footnote)
+                            .foregroundStyle(themeColor)
+                    }
+
                     if alarm.repeatsWeekly {
                         Image(systemName: "repeat")
                             .font(.footnote)

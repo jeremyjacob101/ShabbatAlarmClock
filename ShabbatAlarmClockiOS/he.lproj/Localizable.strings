@@ -36,6 +36,7 @@
 
 "repeat.section" = "חזרה";
 "repeat.every_week" = "חזרה כל שבוע";
+"repeat.auto_snooze_five_minutes" = "נודניק אוטומטי ל־5 דקות";
 
 "sound.section" = "צליל";
 "sound.alarm" = "צליל השעון המעורר";

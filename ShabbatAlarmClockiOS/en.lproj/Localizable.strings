@@ -36,6 +36,7 @@
 
 "repeat.section" = "Repeat";
 "repeat.every_week" = "Repeat every week";
+"repeat.auto_snooze_five_minutes" = "Auto-snooze for 5 minutes";
 
 "sound.section" = "Sound";
 "sound.alarm" = "Alarm Sound";

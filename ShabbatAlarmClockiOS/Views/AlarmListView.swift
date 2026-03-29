@@ -132,14 +132,22 @@ struct AlarmListView: View {
                 }
             }
             .sheet(isPresented: $viewModel.showAddAlarm) {
-                AddAlarmView { time, label, weekday, sound, soundDurationSeconds, repeatsWeekly in
+                AddAlarmView {
+                    time,
+                    label,
+                    weekday,
+                    sound,
+                    soundDurationSeconds,
+                    repeatsWeekly,
+                    autoSnoozeEnabled in
                     viewModel.addAlarm(
                         time: time,
                         label: label,
                         weekday: weekday,
                         sound: sound,
                         soundDurationSeconds: soundDurationSeconds,
-                        repeatsWeekly: repeatsWeekly
+                        repeatsWeekly: repeatsWeekly,
+                        autoSnoozeEnabled: autoSnoozeEnabled
                     )
                 }
                 .environmentObject(localization)
@@ -154,7 +162,14 @@ struct AlarmListView: View {
                     onDelete: {
                         pendingDeletedAlarmID = alarm.id
                     }
-                ) { time, label, weekday, sound, soundDurationSeconds, repeatsWeekly in
+                ) {
+                    time,
+                    label,
+                    weekday,
+                    sound,
+                    soundDurationSeconds,
+                    repeatsWeekly,
+                    autoSnoozeEnabled in
                     viewModel.updateAlarm(
                         id: alarm.id,
                         time: time,
@@ -162,7 +177,8 @@ struct AlarmListView: View {
                         weekday: weekday,
                         sound: sound,
                         soundDurationSeconds: soundDurationSeconds,
-                        repeatsWeekly: repeatsWeekly
+                        repeatsWeekly: repeatsWeekly,
+                        autoSnoozeEnabled: autoSnoozeEnabled
                     )
                 }
                 .environmentObject(localization)

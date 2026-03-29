@@ -32,6 +32,7 @@ struct AddAlarmView: View {
     @State private var sound: AlarmSound = .defaultSound
     @State private var soundDurationSeconds = Alarm.defaultSoundDurationSeconds
     @State private var repeatsWeekly = false
+    @State private var autoSnoozeEnabled = false
     @State private var isTestingSound = false
     @State private var activeAlert: AlertItem?
 
@@ -41,12 +42,12 @@ struct AddAlarmView: View {
     private let soundPreviewPlayer = AlarmSoundPreviewPlayer.shared
 
     let onDelete: (() -> Void)?
-    let onSave: (Date, String, Int, AlarmSound, Int, Bool) -> Void
+    let onSave: (Date, String, Int, AlarmSound, Int, Bool, Bool) -> Void
 
     init(
         alarm: Alarm? = nil,
         onDelete: (() -> Void)? = nil,
-        onSave: @escaping (Date, String, Int, AlarmSound, Int, Bool) -> Void
+        onSave: @escaping (Date, String, Int, AlarmSound, Int, Bool, Bool) -> Void
     ) {
         let strings = AppStrings.current
         let initialAlarm = alarm ?? Alarm(
@@ -63,6 +64,7 @@ struct AddAlarmView: View {
         _sound = State(initialValue: initialAlarm.sound)
         _soundDurationSeconds = State(initialValue: initialAlarm.soundDurationSeconds)
         _repeatsWeekly = State(initialValue: initialAlarm.repeatsWeekly)
+        _autoSnoozeEnabled = State(initialValue: initialAlarm.autoSnoozeEnabled)
         isEditing = alarm != nil
         self.onDelete = onDelete
         self.onSave = onSave
@@ -118,6 +120,11 @@ struct AddAlarmView: View {
                     directionalToggleRow(
                         title: strings.repeatEveryWeek,
                         isOn: $repeatsWeekly
+                    )
+
+                    directionalToggleRow(
+                        title: strings.autoSnoozeForFiveMinutes,
+                        isOn: $autoSnoozeEnabled
                     )
                 } header: {
                     sectionHeader(strings.repeatSection)
@@ -237,7 +244,8 @@ struct AddAlarmView: View {
                             weekday,
                             sound,
                             soundDurationSeconds,
-                            repeatsWeekly
+                            repeatsWeekly,
+                            autoSnoozeEnabled
                         )
                         dismiss()
                     }
@@ -257,6 +265,9 @@ struct AddAlarmView: View {
                 }
             }
             .onChange(of: repeatsWeekly) { _, _ in
+                dismissKeyboard()
+            }
+            .onChange(of: autoSnoozeEnabled) { _, _ in
                 dismissKeyboard()
             }
             .onChange(of: weekday) { _, _ in
@@ -1156,6 +1167,6 @@ private extension Locale {
 }
 
 #Preview {
-    AddAlarmView { _, _, _, _, _, _ in }
+    AddAlarmView { _, _, _, _, _, _, _ in }
         .environmentObject(AppLocalizationController())
 }

@@ -204,6 +204,7 @@ struct AppStrings {
     var alarmTime: String { localized("schedule.time") }
     var repeatSection: String { localized("repeat.section") }
     var repeatEveryWeek: String { localized("repeat.every_week") }
+    var autoSnoozeForFiveMinutes: String { localized("repeat.auto_snooze_five_minutes") }
     var soundSection: String { localized("sound.section") }
     var alarmSound: String { localized("sound.alarm") }
     var alarmSoundLength: String { localized("sound.length") }
