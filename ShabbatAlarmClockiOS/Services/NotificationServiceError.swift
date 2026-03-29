@@ -21,19 +21,22 @@ final class NotificationService {
     private struct NotificationCandidate {
         let alarm: Alarm
         let fireDate: Date
+        let displayedOccurrenceDate: Date
+        let segmentDurationSeconds: Int
     }
 
     private struct WeekdayTimeSlot: Hashable {
         let weekday: Int
         let hour: Int
         let minute: Int
+        let second: Int
     }
 
     private struct WeeklySlotKey: Hashable, Comparable {
         let time: WeekdayTimeSlot
 
         var identifier: String {
-            "\(NotificationService.weeklyIdentifierPrefix)\(time.weekday)-\(time.hour)-\(time.minute)"
+            "\(NotificationService.weeklyIdentifierPrefix)\(time.weekday)-\(time.hour)-\(time.minute)-\(time.second)"
         }
 
         static func < (lhs: WeeklySlotKey, rhs: WeeklySlotKey) -> Bool {
@@ -45,7 +48,11 @@ final class NotificationService {
                 return lhs.time.hour < rhs.time.hour
             }
 
-            return lhs.time.minute < rhs.time.minute
+            if lhs.time.minute != rhs.time.minute {
+                return lhs.time.minute < rhs.time.minute
+            }
+
+            return lhs.time.second < rhs.time.second
         }
     }
 
@@ -153,17 +160,13 @@ final class NotificationService {
 
         for alarm in sortedAlarms {
             if alarm.repeatsWeekly {
-                for fireDate in try weeklyFireDates(for: alarm, calendar: calendar) {
-                    let key = WeeklySlotKey(
-                        time: weekdayTimeSlot(for: fireDate, calendar: calendar)
+                for occurrenceDate in try weeklyOccurrenceDates(for: alarm, calendar: calendar) {
+                    try populateWeeklyRepresentatives(
+                        for: alarm,
+                        occurrenceDate: occurrenceDate,
+                        calendar: calendar,
+                        representatives: &weeklyRepresentatives
                     )
-
-                    if weeklyRepresentatives[key] == nil {
-                        weeklyRepresentatives[key] = NotificationCandidate(
-                            alarm: alarm,
-                            fireDate: fireDate
-                        )
-                    }
                 }
                 continue
             }
@@ -172,23 +175,17 @@ final class NotificationService {
                 throw NotificationServiceError.invalidTriggerDate
             }
 
-            for fireDate in alarm.notificationFireDates(
+            for occurrenceDate in alarm.notificationOccurrenceDates(
                 primaryFireDate: primaryFireDate,
                 calendar: calendar
-            ) where fireDate > now {
-                let timestamp = Int(fireDate.timeIntervalSince1970.rounded())
-                let key = OnceSlotKey(
-                    fireDate: fireDate,
-                    timestamp: timestamp,
-                    weekdayTime: weekdayTimeSlot(for: fireDate, calendar: calendar)
+            ) {
+                try populateOnceRepresentatives(
+                    for: alarm,
+                    occurrenceDate: occurrenceDate,
+                    calendar: calendar,
+                    now: now,
+                    representatives: &onceRepresentatives
                 )
-
-                if onceRepresentatives[key] == nil {
-                    onceRepresentatives[key] = NotificationCandidate(
-                        alarm: alarm,
-                        fireDate: fireDate
-                    )
-                }
             }
         }
 
@@ -203,6 +200,8 @@ final class NotificationService {
                     for: candidate.alarm,
                     key: key,
                     fireDate: candidate.fireDate,
+                    displayedOccurrenceDate: candidate.displayedOccurrenceDate,
+                    segmentDurationSeconds: candidate.segmentDurationSeconds,
                     strings: strings
                 )
             )
@@ -216,6 +215,8 @@ final class NotificationService {
                     for: candidate.alarm,
                     fireDate: candidate.fireDate,
                     identifier: key.identifier,
+                    displayedOccurrenceDate: candidate.displayedOccurrenceDate,
+                    segmentDurationSeconds: candidate.segmentDurationSeconds,
                     strings: strings
                 )
             )
@@ -228,20 +229,22 @@ final class NotificationService {
         for alarm: Alarm,
         key: WeeklySlotKey,
         fireDate: Date,
+        displayedOccurrenceDate: Date,
+        segmentDurationSeconds: Int,
         strings: AppStrings
     ) -> UNNotificationRequest {
         var components = DateComponents()
         components.weekday = key.time.weekday
         components.hour = key.time.hour
         components.minute = key.time.minute
-        components.second = 0
+        components.second = key.time.second
 
         return UNNotificationRequest(
             identifier: key.identifier,
             content: notificationContent(
                 for: alarm,
-                weekday: key.time.weekday,
-                time: fireDate,
+                displayedOccurrenceDate: displayedOccurrenceDate,
+                segmentDurationSeconds: segmentDurationSeconds,
                 strings: strings
             ),
             trigger: UNCalendarNotificationTrigger(
@@ -255,6 +258,8 @@ final class NotificationService {
         for alarm: Alarm,
         fireDate: Date,
         identifier: String,
+        displayedOccurrenceDate: Date,
+        segmentDurationSeconds: Int,
         strings: AppStrings
     ) -> UNNotificationRequest {
         let calendar = Calendar.current
@@ -267,8 +272,8 @@ final class NotificationService {
             identifier: identifier,
             content: notificationContent(
                 for: alarm,
-                weekday: calendar.component(.weekday, from: fireDate),
-                time: fireDate,
+                displayedOccurrenceDate: displayedOccurrenceDate,
+                segmentDurationSeconds: segmentDurationSeconds,
                 strings: strings
             ),
             trigger: UNCalendarNotificationTrigger(
@@ -280,20 +285,24 @@ final class NotificationService {
 
     private func notificationContent(
         for alarm: Alarm,
-        weekday: Int,
-        time: Date,
+        displayedOccurrenceDate: Date,
+        segmentDurationSeconds: Int,
         strings: AppStrings
     ) -> UNMutableNotificationContent {
+        let calendar = Calendar.current
         let content = UNMutableNotificationContent()
         content.title = strings.displayedAlarmLabel(alarm.label)
         content.body = strings.notificationBody(
-            weekday: weekdayName(for: weekday, strings: strings),
-            time: time
+            weekday: weekdayName(
+                for: calendar.component(.weekday, from: displayedOccurrenceDate),
+                strings: strings
+            ),
+            time: displayedOccurrenceDate
         )
         content.userInfo[Self.managedNotificationKey] = true
 
         if let customSoundName = alarm.sound.notificationSoundName(
-            durationSeconds: alarm.soundDurationSeconds
+            durationSeconds: segmentDurationSeconds
         ) {
             content.sound = UNNotificationSound(
                 named: UNNotificationSoundName(rawValue: customSoundName)
@@ -333,7 +342,7 @@ final class NotificationService {
         return lhs.id.uuidString < rhs.id.uuidString
     }
 
-    private func weeklyFireDates(for alarm: Alarm, calendar: Calendar) throws -> [Date] {
+    private func weeklyOccurrenceDates(for alarm: Alarm, calendar: Calendar) throws -> [Date] {
         var components = calendar.dateComponents([.hour, .minute], from: alarm.time)
         components.weekday = alarm.weekday
         components.second = 0
@@ -348,17 +357,84 @@ final class NotificationService {
             throw NotificationServiceError.invalidTriggerDate
         }
 
-        return alarm.notificationFireDates(primaryFireDate: primaryFireDate, calendar: calendar)
+        return alarm.notificationOccurrenceDates(primaryFireDate: primaryFireDate, calendar: calendar)
     }
 
     private func weekdayTimeSlot(for fireDate: Date, calendar: Calendar) -> WeekdayTimeSlot {
-        let components = calendar.dateComponents([.weekday, .hour, .minute], from: fireDate)
+        let components = calendar.dateComponents([.weekday, .hour, .minute, .second], from: fireDate)
 
         return WeekdayTimeSlot(
             weekday: components.weekday ?? 1,
             hour: components.hour ?? 0,
-            minute: components.minute ?? 0
+            minute: components.minute ?? 0,
+            second: components.second ?? 0
         )
+    }
+
+    private func populateWeeklyRepresentatives(
+        for alarm: Alarm,
+        occurrenceDate: Date,
+        calendar: Calendar,
+        representatives: inout [WeeklySlotKey: NotificationCandidate]
+    ) throws {
+        for segment in Alarm.notificationSoundSegments(for: alarm.soundDurationSeconds) {
+            guard let fireDate = calendar.date(
+                byAdding: .second,
+                value: segment.offsetSeconds,
+                to: occurrenceDate
+            ) else {
+                throw NotificationServiceError.invalidTriggerDate
+            }
+
+            let key = WeeklySlotKey(
+                time: weekdayTimeSlot(for: fireDate, calendar: calendar)
+            )
+
+            if representatives[key] == nil {
+                representatives[key] = NotificationCandidate(
+                    alarm: alarm,
+                    fireDate: fireDate,
+                    displayedOccurrenceDate: occurrenceDate,
+                    segmentDurationSeconds: segment.durationSeconds
+                )
+            }
+        }
+    }
+
+    private func populateOnceRepresentatives(
+        for alarm: Alarm,
+        occurrenceDate: Date,
+        calendar: Calendar,
+        now: Date,
+        representatives: inout [OnceSlotKey: NotificationCandidate]
+    ) throws {
+        for segment in Alarm.notificationSoundSegments(for: alarm.soundDurationSeconds) {
+            guard let fireDate = calendar.date(
+                byAdding: .second,
+                value: segment.offsetSeconds,
+                to: occurrenceDate
+            ) else {
+                throw NotificationServiceError.invalidTriggerDate
+            }
+
+            guard fireDate > now else { continue }
+
+            let timestamp = Int(fireDate.timeIntervalSince1970.rounded())
+            let key = OnceSlotKey(
+                fireDate: fireDate,
+                timestamp: timestamp,
+                weekdayTime: weekdayTimeSlot(for: fireDate, calendar: calendar)
+            )
+
+            if representatives[key] == nil {
+                representatives[key] = NotificationCandidate(
+                    alarm: alarm,
+                    fireDate: fireDate,
+                    displayedOccurrenceDate: occurrenceDate,
+                    segmentDurationSeconds: segment.durationSeconds
+                )
+            }
+        }
     }
 
     private func managedNotificationIdentifiers(knownAlarmIDs: [UUID]) async -> [String] {

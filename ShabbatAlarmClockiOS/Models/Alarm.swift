@@ -1,9 +1,15 @@
 import Foundation
 
 struct Alarm: Identifiable, Codable, Equatable {
-    static let supportedSoundDurations = [5, 10, 15, 20]
+    struct NotificationSoundSegment: Equatable {
+        let offsetSeconds: Int
+        let durationSeconds: Int
+    }
+
+    static let supportedSoundDurations = [10, 20, 30, 40, 50, 60]
     static let soundDurationRange = supportedSoundDurations.first!...supportedSoundDurations.last!
-    static let defaultSoundDurationSeconds = supportedSoundDurations[supportedSoundDurations.count / 2]
+    static let defaultSoundDurationSeconds = 20
+    static let previewSoundDurationSeconds = 10
     static let autoSnoozeMinutes = 5
 
     let id: UUID
@@ -110,7 +116,7 @@ struct Alarm: Identifiable, Codable, Equatable {
         return scheduledDate ?? nextTriggerDate(referenceDate: referenceDate, calendar: calendar)
     }
 
-    func notificationFireDates(
+    func notificationOccurrenceDates(
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> [Date] {
@@ -121,10 +127,10 @@ struct Alarm: Identifiable, Codable, Equatable {
             return []
         }
 
-        return notificationFireDates(primaryFireDate: primaryFireDate, calendar: calendar)
+        return notificationOccurrenceDates(primaryFireDate: primaryFireDate, calendar: calendar)
     }
 
-    func notificationFireDates(
+    func notificationOccurrenceDates(
         primaryFireDate: Date,
         calendar: Calendar = .current
     ) -> [Date] {
@@ -145,7 +151,24 @@ struct Alarm: Identifiable, Codable, Equatable {
     func oneTimeExpirationDate(referenceDate: Date = Date(), calendar: Calendar = .current) -> Date? {
         guard !repeatsWeekly else { return nil }
 
-        return notificationFireDates(referenceDate: referenceDate, calendar: calendar).last
+        guard let lastOccurrenceDate = notificationOccurrenceDates(
+            referenceDate: referenceDate,
+            calendar: calendar
+        ).last else {
+            return nil
+        }
+
+        guard let lastSegment = Self.notificationSoundSegments(
+            for: soundDurationSeconds
+        ).last else {
+            return lastOccurrenceDate
+        }
+
+        return calendar.date(
+            byAdding: .second,
+            value: lastSegment.offsetSeconds,
+            to: lastOccurrenceDate
+        ) ?? lastOccurrenceDate
     }
 
     private static func normalizedWeekday(_ weekday: Int, fallbackDate: Date) -> Int {
@@ -158,10 +181,47 @@ struct Alarm: Identifiable, Codable, Equatable {
     }
 
     static func clampedSoundDuration(_ value: Int) -> Int {
-        supportedSoundDurations.min {
-            let lhsDistance = (abs($0 - value), $0)
-            let rhsDistance = (abs($1 - value), $1)
-            return lhsDistance < rhsDistance
-        } ?? defaultSoundDurationSeconds
+        guard let first = supportedSoundDurations.first,
+              let last = supportedSoundDurations.last else {
+            return defaultSoundDurationSeconds
+        }
+
+        if supportedSoundDurations.contains(value) {
+            return value
+        }
+
+        if value <= first {
+            return first
+        }
+
+        return supportedSoundDurations.first(where: { value < $0 }) ?? last
+    }
+
+    static func notificationSoundSegments(for durationSeconds: Int) -> [NotificationSoundSegment] {
+        switch clampedSoundDuration(durationSeconds) {
+        case 10:
+            return [NotificationSoundSegment(offsetSeconds: 0, durationSeconds: 10)]
+        case 20:
+            return [NotificationSoundSegment(offsetSeconds: 0, durationSeconds: 20)]
+        case 30:
+            return [NotificationSoundSegment(offsetSeconds: 0, durationSeconds: 30)]
+        case 40:
+            return [
+                NotificationSoundSegment(offsetSeconds: 0, durationSeconds: 30),
+                NotificationSoundSegment(offsetSeconds: 30, durationSeconds: 10)
+            ]
+        case 50:
+            return [
+                NotificationSoundSegment(offsetSeconds: 0, durationSeconds: 30),
+                NotificationSoundSegment(offsetSeconds: 30, durationSeconds: 20)
+            ]
+        case 60:
+            return [
+                NotificationSoundSegment(offsetSeconds: 0, durationSeconds: 30),
+                NotificationSoundSegment(offsetSeconds: 30, durationSeconds: 30)
+            ]
+        default:
+            return [NotificationSoundSegment(offsetSeconds: 0, durationSeconds: 10)]
+        }
     }
 }

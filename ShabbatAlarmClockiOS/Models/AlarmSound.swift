@@ -26,40 +26,24 @@ enum AlarmSound: String, CaseIterable, Codable, Identifiable {
         AppStrings(language: language).soundDisplayName(self)
     }
 
-    var fileName: String {
-        "\(rawValue).wav"
-    }
-
     func bundledFileURL(durationSeconds: Int) -> URL? {
-        if let variantURL = bundleURL(resource: variantResourceName(durationSeconds: durationSeconds)) {
-            return variantURL
-        }
-
-        return bundleURL(resource: rawValue)
+        bundleURL(resource: louderVariantResourceName(durationSeconds: durationSeconds))
     }
 
     func notificationSoundName(durationSeconds: Int) -> String? {
-        let variantName = variantFileName(durationSeconds: durationSeconds)
-        if let soundName = notificationSoundName(
-            resource: variantResourceName(durationSeconds: durationSeconds),
-            fileName: variantName
-        ) {
-            return soundName
-        }
-
-        if let soundName = notificationSoundName(resource: rawValue, fileName: fileName) {
-            return soundName
-        }
-
-        return nil
+        let fileName = louderVariantFileName(durationSeconds: durationSeconds)
+        return notificationSoundName(
+            resource: louderVariantResourceName(durationSeconds: durationSeconds),
+            fileName: fileName
+        )
     }
 
-    private func variantResourceName(durationSeconds: Int) -> String {
-        "\(rawValue)_\(Alarm.clampedSoundDuration(durationSeconds))s"
+    private func louderVariantResourceName(durationSeconds: Int) -> String {
+        "\(rawValue)_\(Alarm.clampedSoundDuration(durationSeconds))s_louder"
     }
 
-    private func variantFileName(durationSeconds: Int) -> String {
-        "\(variantResourceName(durationSeconds: durationSeconds)).wav"
+    private func louderVariantFileName(durationSeconds: Int) -> String {
+        "\(louderVariantResourceName(durationSeconds: durationSeconds)).wav"
     }
 
     private func bundleURL(resource: String) -> URL? {

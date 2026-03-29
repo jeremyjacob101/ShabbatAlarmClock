@@ -500,7 +500,7 @@ struct AddAlarmView: View {
 
     private func startSoundPreview() {
         isTestingSound = true
-        soundPreviewPlayer.play(sound, durationSeconds: soundDurationSeconds) {
+        soundPreviewPlayer.play(sound, durationSeconds: Alarm.previewSoundDurationSeconds) {
             isTestingSound = false
         }
     }
