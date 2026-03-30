@@ -19,6 +19,7 @@ struct Alarm: Identifiable, Codable, Equatable {
     var weekday: Int
     var sound: AlarmSound
     var soundDurationSeconds: Int
+    var soundNoiseLevel: AlarmNoiseLevel
     var repeatsWeekly: Bool
     var autoSnoozeEnabled: Bool
     var scheduledDate: Date?
@@ -31,6 +32,7 @@ struct Alarm: Identifiable, Codable, Equatable {
         weekday: Int = Calendar.current.component(.weekday, from: Date()),
         sound: AlarmSound = .defaultSound,
         soundDurationSeconds: Int = Alarm.defaultSoundDurationSeconds,
+        soundNoiseLevel: AlarmNoiseLevel = .defaultLevel,
         repeatsWeekly: Bool = true,
         autoSnoozeEnabled: Bool = false,
         scheduledDate: Date? = nil
@@ -42,6 +44,7 @@ struct Alarm: Identifiable, Codable, Equatable {
         self.weekday = Alarm.normalizedWeekday(weekday, fallbackDate: time)
         self.sound = sound
         self.soundDurationSeconds = Alarm.clampedSoundDuration(soundDurationSeconds)
+        self.soundNoiseLevel = soundNoiseLevel
         self.repeatsWeekly = repeatsWeekly
         self.autoSnoozeEnabled = autoSnoozeEnabled
         self.scheduledDate = repeatsWeekly ? nil : scheduledDate
@@ -55,6 +58,7 @@ struct Alarm: Identifiable, Codable, Equatable {
         case weekday
         case sound
         case soundDurationSeconds
+        case soundNoiseLevel
         case repeatsWeekly
         case autoSnoozeEnabled
         case scheduledDate
@@ -73,6 +77,10 @@ struct Alarm: Identifiable, Codable, Equatable {
             Int.self,
             forKey: .soundDurationSeconds
         ) ?? Self.defaultSoundDurationSeconds
+        let soundNoiseLevel = try container.decodeIfPresent(
+            AlarmNoiseLevel.self,
+            forKey: .soundNoiseLevel
+        ) ?? .defaultLevel
         let repeatsWeekly = try container.decodeIfPresent(Bool.self, forKey: .repeatsWeekly) ?? true
         let autoSnoozeEnabled = try container.decodeIfPresent(
             Bool.self,
@@ -88,6 +96,7 @@ struct Alarm: Identifiable, Codable, Equatable {
             weekday: decodedWeekday ?? Calendar.current.component(.weekday, from: time),
             sound: sound,
             soundDurationSeconds: soundDurationSeconds,
+            soundNoiseLevel: soundNoiseLevel,
             repeatsWeekly: repeatsWeekly,
             autoSnoozeEnabled: autoSnoozeEnabled,
             scheduledDate: scheduledDate

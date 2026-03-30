@@ -138,6 +138,7 @@ struct AlarmListView: View {
                     weekday,
                     sound,
                     soundDurationSeconds,
+                    soundNoiseLevel,
                     repeatsWeekly,
                     autoSnoozeEnabled in
                     viewModel.addAlarm(
@@ -146,6 +147,7 @@ struct AlarmListView: View {
                         weekday: weekday,
                         sound: sound,
                         soundDurationSeconds: soundDurationSeconds,
+                        soundNoiseLevel: soundNoiseLevel,
                         repeatsWeekly: repeatsWeekly,
                         autoSnoozeEnabled: autoSnoozeEnabled
                     )
@@ -168,6 +170,7 @@ struct AlarmListView: View {
                     weekday,
                     sound,
                     soundDurationSeconds,
+                    soundNoiseLevel,
                     repeatsWeekly,
                     autoSnoozeEnabled in
                     viewModel.updateAlarm(
@@ -177,6 +180,7 @@ struct AlarmListView: View {
                         weekday: weekday,
                         sound: sound,
                         soundDurationSeconds: soundDurationSeconds,
+                        soundNoiseLevel: soundNoiseLevel,
                         repeatsWeekly: repeatsWeekly,
                         autoSnoozeEnabled: autoSnoozeEnabled
                     )

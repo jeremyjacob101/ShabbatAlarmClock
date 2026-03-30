@@ -302,7 +302,8 @@ final class NotificationService {
         content.userInfo[Self.managedNotificationKey] = true
 
         if let customSoundName = alarm.sound.notificationSoundName(
-            durationSeconds: segmentDurationSeconds
+            durationSeconds: segmentDurationSeconds,
+            noiseLevel: alarm.soundNoiseLevel
         ) {
             content.sound = UNNotificationSound(
                 named: UNNotificationSoundName(rawValue: customSoundName)

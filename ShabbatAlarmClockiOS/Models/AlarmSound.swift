@@ -26,24 +26,54 @@ enum AlarmSound: String, CaseIterable, Codable, Identifiable {
         AppStrings(language: language).soundDisplayName(self)
     }
 
-    func bundledFileURL(durationSeconds: Int) -> URL? {
-        return bundleURL(resource: louderVariantResourceName(durationSeconds: durationSeconds))
+    func bundledFileURL(
+        durationSeconds: Int,
+        noiseLevel: AlarmNoiseLevel = .defaultLevel
+    ) -> URL? {
+        guard let resource = resolvedResourceName(
+            durationSeconds: durationSeconds,
+            noiseLevel: noiseLevel
+        ) else {
+            return nil
+        }
+
+        return bundleURL(resource: resource)
     }
 
-    func notificationSoundName(durationSeconds: Int) -> String? {
-        let fileName = louderVariantFileName(durationSeconds: durationSeconds)
+    func notificationSoundName(
+        durationSeconds: Int,
+        noiseLevel: AlarmNoiseLevel = .defaultLevel
+    ) -> String? {
+        guard let resource = resolvedResourceName(
+            durationSeconds: durationSeconds,
+            noiseLevel: noiseLevel
+        ) else {
+            return nil
+        }
+
+        let fileName = "\(resource).wav"
         return notificationSoundName(
-            resource: louderVariantResourceName(durationSeconds: durationSeconds),
+            resource: resource,
             fileName: fileName
         )
     }
 
-    private func louderVariantResourceName(durationSeconds: Int) -> String {
-        "\(rawValue)_\(Alarm.clampedSoundDuration(durationSeconds))s_louder"
+    private func resolvedResourceName(
+        durationSeconds: Int,
+        noiseLevel: AlarmNoiseLevel
+    ) -> String? {
+        resourceNameCandidates(durationSeconds: durationSeconds, noiseLevel: noiseLevel)
+            .first(where: { bundleURL(resource: $0) != nil })
     }
 
-    private func louderVariantFileName(durationSeconds: Int) -> String {
-        "\(louderVariantResourceName(durationSeconds: durationSeconds)).wav"
+    private func resourceNameCandidates(
+        durationSeconds: Int,
+        noiseLevel: AlarmNoiseLevel
+    ) -> [String] {
+        let clampedDurationSeconds = Alarm.clampedSoundDuration(durationSeconds)
+        return noiseLevel.fileSuffixCandidates.map { suffix in
+            "\(rawValue)_\(clampedDurationSeconds)s_\(suffix)"
+        }
     }
 
     private func bundleURL(resource: String) -> URL? {

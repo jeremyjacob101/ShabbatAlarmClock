@@ -112,6 +112,7 @@ final class AlarmListViewModel: ObservableObject {
         weekday: Int,
         sound: AlarmSound,
         soundDurationSeconds: Int,
+        soundNoiseLevel: AlarmNoiseLevel,
         repeatsWeekly: Bool,
         autoSnoozeEnabled: Bool
     ) {
@@ -139,6 +140,7 @@ final class AlarmListViewModel: ObservableObject {
                 weekday: weekday,
                 sound: sound,
                 soundDurationSeconds: soundDurationSeconds,
+                soundNoiseLevel: soundNoiseLevel,
                 repeatsWeekly: repeatsWeekly,
                 autoSnoozeEnabled: autoSnoozeEnabled
             )
@@ -168,6 +170,7 @@ final class AlarmListViewModel: ObservableObject {
         weekday: Int,
         sound: AlarmSound,
         soundDurationSeconds: Int,
+        soundNoiseLevel: AlarmNoiseLevel,
         repeatsWeekly: Bool,
         autoSnoozeEnabled: Bool
     ) {
@@ -178,6 +181,7 @@ final class AlarmListViewModel: ObservableObject {
         alarms[index].weekday = weekday
         alarms[index].sound = sound
         alarms[index].soundDurationSeconds = Alarm.clampedSoundDuration(soundDurationSeconds)
+        alarms[index].soundNoiseLevel = soundNoiseLevel
         alarms[index].repeatsWeekly = repeatsWeekly
         alarms[index].autoSnoozeEnabled = autoSnoozeEnabled
         alarms[index].scheduledDate = repeatsWeekly ? nil : alarms[index].nextTriggerDate()

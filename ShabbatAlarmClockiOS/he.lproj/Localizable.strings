@@ -41,9 +41,13 @@
 "sound.section" = "צליל";
 "sound.alarm" = "צליל השעון המעורר";
 "sound.length" = "משך צליל השעון המעורר";
+"sound.noise_level" = "עוצמת רעש";
+"sound.noise_level.soft" = "רגוע";
+"sound.noise_level.loud" = "חזק";
 "sound.test" = "בדיקת צליל";
 "sound.stop" = "עצירת צליל";
 "sound.accessibility.length" = "משך צליל השעון המעורר";
+"sound.accessibility.noise_level" = "עוצמת רעש השעון המעורר";
 "sound.name.chimes" = "פעמונים";
 "sound.name.alarm" = "שעון מעורר";
 "sound.name.harp" = "נבל";

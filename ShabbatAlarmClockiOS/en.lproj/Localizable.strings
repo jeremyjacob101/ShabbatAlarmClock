@@ -41,9 +41,13 @@
 "sound.section" = "Sound";
 "sound.alarm" = "Alarm Sound";
 "sound.length" = "Alarm Sound Length";
+"sound.noise_level" = "Noise Level";
+"sound.noise_level.soft" = "Soft";
+"sound.noise_level.loud" = "Loud";
 "sound.test" = "Test Sound";
 "sound.stop" = "Stop Sound";
 "sound.accessibility.length" = "Alarm sound length";
+"sound.accessibility.noise_level" = "Alarm noise level";
 "sound.name.chimes" = "Chimes";
 "sound.name.alarm" = "Alarm";
 "sound.name.harp" = "Harp";

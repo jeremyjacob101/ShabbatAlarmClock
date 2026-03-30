@@ -17,10 +17,18 @@ final class AlarmSoundPreviewPlayer {
         }
     }
 
-    func play(_ sound: AlarmSound, durationSeconds: Int, onCompletion: @escaping () -> Void) {
+    func play(
+        _ sound: AlarmSound,
+        durationSeconds: Int,
+        noiseLevel: AlarmNoiseLevel = .defaultLevel,
+        onCompletion: @escaping () -> Void
+    ) {
         stop()
 
-        guard let url = sound.bundledFileURL(durationSeconds: durationSeconds) else {
+        guard let url = sound.bundledFileURL(
+            durationSeconds: durationSeconds,
+            noiseLevel: noiseLevel
+        ) else {
             onCompletion()
             return
         }

@@ -208,9 +208,11 @@ struct AppStrings {
     var soundSection: String { localized("sound.section") }
     var alarmSound: String { localized("sound.alarm") }
     var alarmSoundLength: String { localized("sound.length") }
+    var noiseLevel: String { localized("sound.noise_level") }
     var testSound: String { localized("sound.test") }
     var stopSound: String { localized("sound.stop") }
     var alarmSoundLengthAccessibilityLabel: String { localized("sound.accessibility.length") }
+    var noiseLevelAccessibilityLabel: String { localized("sound.accessibility.noise_level") }
     var labelSection: String { localized("label.section") }
     var editAlarmTitle: String { localized("alarm.edit.title") }
     var newAlarmTitle: String { localized("alarm.new.title") }
@@ -260,6 +262,10 @@ struct AppStrings {
 
     func soundDisplayName(_ sound: AlarmSound) -> String {
         localized(sound.localizationKey)
+    }
+
+    func noiseLevelDisplayName(_ noiseLevel: AlarmNoiseLevel) -> String {
+        localized(noiseLevel.localizationKey)
     }
 
     func weekdayName(for weekday: Int) -> String {

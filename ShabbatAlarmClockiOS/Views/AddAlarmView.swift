@@ -31,6 +31,7 @@ struct AddAlarmView: View {
     @State private var weekday = 7
     @State private var sound: AlarmSound = .defaultSound
     @State private var soundDurationSeconds = Alarm.defaultSoundDurationSeconds
+    @State private var soundNoiseLevel: AlarmNoiseLevel = .defaultLevel
     @State private var repeatsWeekly = false
     @State private var autoSnoozeEnabled = false
     @State private var isTestingSound = false
@@ -42,12 +43,12 @@ struct AddAlarmView: View {
     private let soundPreviewPlayer = AlarmSoundPreviewPlayer.shared
 
     let onDelete: (() -> Void)?
-    let onSave: (Date, String, Int, AlarmSound, Int, Bool, Bool) -> Void
+    let onSave: (Date, String, Int, AlarmSound, Int, AlarmNoiseLevel, Bool, Bool) -> Void
 
     init(
         alarm: Alarm? = nil,
         onDelete: (() -> Void)? = nil,
-        onSave: @escaping (Date, String, Int, AlarmSound, Int, Bool, Bool) -> Void
+        onSave: @escaping (Date, String, Int, AlarmSound, Int, AlarmNoiseLevel, Bool, Bool) -> Void
     ) {
         let strings = AppStrings.current
         let initialAlarm = alarm ?? Alarm(
@@ -63,6 +64,7 @@ struct AddAlarmView: View {
         _weekday = State(initialValue: initialAlarm.weekday)
         _sound = State(initialValue: initialAlarm.sound)
         _soundDurationSeconds = State(initialValue: initialAlarm.soundDurationSeconds)
+        _soundNoiseLevel = State(initialValue: initialAlarm.soundNoiseLevel)
         _repeatsWeekly = State(initialValue: initialAlarm.repeatsWeekly)
         _autoSnoozeEnabled = State(initialValue: initialAlarm.autoSnoozeEnabled)
         isEditing = alarm != nil
@@ -88,6 +90,10 @@ struct AddAlarmView: View {
 
     private var fixedScreenOrderLayoutDirection: LayoutDirection {
         .leftToRight
+    }
+
+    private var noiseLevelPickerOptions: [AlarmNoiseLevel] {
+        isRightToLeft ? Array(AlarmNoiseLevel.allCases.reversed()) : AlarmNoiseLevel.allCases
     }
 
     private var showsDeleteButton: Bool {
@@ -148,6 +154,16 @@ struct AddAlarmView: View {
                             steps: Alarm.supportedSoundDurations,
                             accessibilityLabel: strings.alarmSoundLengthAccessibilityLabel
                         )
+                    }
+
+                    directionalSegmentedPickerRow(
+                        title: strings.noiseLevel,
+                        selection: $soundNoiseLevel,
+                        accessibilityLabel: strings.noiseLevelAccessibilityLabel
+                    ) {
+                        ForEach(noiseLevelPickerOptions) { noiseLevel in
+                            Text(noiseLevel.displayName(in: localization.language)).tag(noiseLevel)
+                        }
                     }
                 } header: {
                     directionalHeaderWithAction(
@@ -244,6 +260,7 @@ struct AddAlarmView: View {
                             weekday,
                             sound,
                             soundDurationSeconds,
+                            soundNoiseLevel,
                             repeatsWeekly,
                             autoSnoozeEnabled
                         )
@@ -259,6 +276,12 @@ struct AddAlarmView: View {
                 }
             }
             .onChange(of: soundDurationSeconds) { _, _ in
+                dismissKeyboard()
+                if isTestingSound {
+                    stopSoundPreview()
+                }
+            }
+            .onChange(of: soundNoiseLevel) { _, _ in
                 dismissKeyboard()
                 if isTestingSound {
                     stopSoundPreview()
@@ -416,6 +439,54 @@ struct AddAlarmView: View {
     }
 
     @ViewBuilder
+    private func directionalSegmentedPickerRow<SelectionValue: Hashable, Content: View>(
+        title: String,
+        selection: Binding<SelectionValue>,
+        accessibilityLabel: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        fixedScreenOrderRow {
+            if isRightToLeft {
+                segmentedPicker(
+                    title: title,
+                    selection: selection,
+                    accessibilityLabel: accessibilityLabel,
+                    content: content
+                )
+                Spacer()
+                Text(title)
+                    .multilineTextAlignment(.trailing)
+            } else {
+                Text(title)
+                    .multilineTextAlignment(.leading)
+                Spacer()
+                segmentedPicker(
+                    title: title,
+                    selection: selection,
+                    accessibilityLabel: accessibilityLabel,
+                    content: content
+                )
+            }
+        }
+    }
+
+    private func segmentedPicker<SelectionValue: Hashable, Content: View>(
+        title: String,
+        selection: Binding<SelectionValue>,
+        accessibilityLabel: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        Picker(title, selection: selection) {
+            content()
+        }
+        .labelsHidden()
+        .pickerStyle(.segmented)
+        .accessibilityLabel(accessibilityLabel)
+        .environment(\.layoutDirection, .leftToRight)
+        .frame(maxWidth: 170)
+    }
+
+    @ViewBuilder
     private func fixedScreenOrderRow<Content: View>(
         @ViewBuilder content: () -> Content
     ) -> some View {
@@ -500,7 +571,11 @@ struct AddAlarmView: View {
 
     private func startSoundPreview() {
         isTestingSound = true
-        soundPreviewPlayer.play(sound, durationSeconds: Alarm.previewSoundDurationSeconds) {
+        soundPreviewPlayer.play(
+            sound,
+            durationSeconds: Alarm.previewSoundDurationSeconds,
+            noiseLevel: soundNoiseLevel
+        ) {
             isTestingSound = false
         }
     }
@@ -1167,6 +1242,6 @@ private extension Locale {
 }
 
 #Preview {
-    AddAlarmView { _, _, _, _, _, _, _ in }
+    AddAlarmView { _, _, _, _, _, _, _, _ in }
         .environmentObject(AppLocalizationController())
 }
