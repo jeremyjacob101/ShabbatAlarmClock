@@ -238,6 +238,8 @@ final class NotificationService {
         components.hour = key.time.hour
         components.minute = key.time.minute
         components.second = key.time.second
+        components.calendar = Calendar.current
+        components.timeZone = Calendar.current.timeZone
 
         return UNNotificationRequest(
             identifier: key.identifier,
@@ -263,10 +265,12 @@ final class NotificationService {
         strings: AppStrings
     ) -> UNNotificationRequest {
         let calendar = Calendar.current
-        let components = calendar.dateComponents(
+        var components = calendar.dateComponents(
             [.year, .month, .day, .hour, .minute, .second],
             from: fireDate
         )
+        components.calendar = calendar
+        components.timeZone = calendar.timeZone
 
         return UNNotificationRequest(
             identifier: identifier,
@@ -349,7 +353,7 @@ final class NotificationService {
         components.second = 0
 
         guard let primaryFireDate = calendar.nextDate(
-            after: Date(timeIntervalSince1970: 0),
+            after: Date(),
             matching: components,
             matchingPolicy: .nextTime,
             repeatedTimePolicy: .first,
