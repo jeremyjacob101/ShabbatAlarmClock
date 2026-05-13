@@ -5,7 +5,7 @@
 <h1 align="center">Shabbat Alarm Clock</h1>
 
 <p align="center">
-  A calm, local-first iOS alarm app built around the weekly rhythm of Shabbat.
+  A sleek, self-muting iOS alarm app built around the weekly rhythm of Shabbat.
 </p>
 
 <p align="center">
