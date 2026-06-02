@@ -560,12 +560,12 @@ struct AddAlarmView: View {
     }
 
     private func presentRingerReminderIfNeeded() {
-        if !reminderPreferences.shouldShowTestSoundReminder() {
+        guard reminderPreferences.shouldShowTestSoundReminder else {
             startSoundPreview()
             return
         }
 
-        reminderPreferences.markTestSoundReminderShown()
+        reminderPreferences.suppressTestSoundReminder()
         activeAlert = .ringerReminder
     }
 

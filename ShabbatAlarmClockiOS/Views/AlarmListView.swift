@@ -1,6 +1,7 @@
 import SwiftUI
 import StoreKit
 import UIKit
+import WebKit
 
 struct AlarmListView: View {
     @EnvironmentObject private var localization: AppLocalizationController
@@ -14,6 +15,19 @@ struct AlarmListView: View {
 
     private var strings: AppStrings {
         localization.strings
+    }
+
+    private var systemAlert: Binding<AlarmListViewModel.AlertItem?> {
+        Binding {
+            guard viewModel.activeAlert?.isRingerReminder != true else {
+                return nil
+            }
+
+            return viewModel.activeAlert
+        } set: { newValue in
+            guard viewModel.activeAlert?.isRingerReminder != true else { return }
+            viewModel.activeAlert = newValue
+        }
     }
 
     private var settingsPlacement: ToolbarItemPlacement {
@@ -191,7 +205,7 @@ struct AlarmListView: View {
                 .environment(\.layoutDirection, localization.layoutDirection)
                 .id("edit-alarm-sheet-\(localization.language.rawValue)-\(alarm.id.uuidString)")
             }
-            .alert(item: $viewModel.activeAlert) { alert in
+            .alert(item: systemAlert) { alert in
                 switch alert.kind {
                 case .notice(let message):
                     Alert(
@@ -214,16 +228,26 @@ struct AlarmListView: View {
                         }
                     )
                 case .ringerReminder:
-                    Alert(
-                        title: Text(AppAlertContent.ringerReminderTitle),
-                        message: Text(AppAlertContent.ringerReminderMessage),
-                        primaryButton: .default(Text(strings.dontShowAgain)) {
+                    Alert(title: Text(AppAlertContent.ringerReminderTitle))
+                }
+            }
+            .overlay {
+                if viewModel.activeAlert?.isRingerReminder == true {
+                    RingerReminderDialog(
+                        title: strings.ringerReminderTitle,
+                        message: strings.ringerReminderBody,
+                        secondaryTitle: strings.ringerReminderDoNotDisturbTitle,
+                        secondaryBody: strings.ringerReminderDoNotDisturbMessage,
+                        dismissButtonTitle: strings.dontShowAgain,
+                        confirmButtonTitle: strings.okay,
+                        dismissAction: {
                             viewModel.suppressSaveReminder()
                         },
-                        secondaryButton: .default(Text(strings.okay)) {
+                        confirmAction: {
                             viewModel.dismissActiveAlert()
                         }
                     )
+                    .environment(\.layoutDirection, localization.layoutDirection)
                 }
             }
             .onAppear {
@@ -296,6 +320,156 @@ struct AlarmListView: View {
         guard let pendingDeletedAlarmID else { return }
         self.pendingDeletedAlarmID = nil
         viewModel.deleteAlarm(id: pendingDeletedAlarmID)
+    }
+}
+
+private struct RingerReminderDialog: View {
+    let title: String
+    let message: String
+    let secondaryTitle: String
+    let secondaryBody: String
+    let dismissButtonTitle: String?
+    let confirmButtonTitle: String
+    let dismissAction: (() -> Void)?
+    let confirmAction: () -> Void
+
+    var body: some View {
+        GeometryReader { proxy in
+            Color.black.opacity(0.22)
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 10) {
+                reminderTitle(title)
+
+                reminderBody(message)
+                    .padding(.bottom, 18)
+
+                reminderTitle(secondaryTitle)
+
+                reminderBody(secondaryBody)
+                    .padding(.bottom, 8)
+
+                AnimatedGIFView(assetName: "DNDDemo")
+                    .frame(width: 285, height: 315)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.bottom, 14)
+
+                if let dismissButtonTitle, let dismissAction {
+                    dialogButton(dismissButtonTitle, role: .destructive, action: dismissAction)
+                }
+
+                dialogButton(confirmButtonTitle, action: confirmAction)
+            }
+            .padding(.horizontal, 28)
+            .padding(.vertical, 26)
+            .frame(maxWidth: 350, alignment: .leading)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(Color.white.opacity(0.35), lineWidth: 1)
+            )
+            .padding(.horizontal, 28)
+            .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
+        }
+    }
+
+    private func reminderTitle(_ text: String) -> some View {
+        Text(text)
+            .font(.title3.weight(.bold))
+            .foregroundStyle(.primary)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func reminderBody(_ text: String) -> some View {
+        Text(text)
+            .font(.title3)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func dialogButton(
+        _ title: String,
+        role: ButtonRole? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(role == .destructive ? Color(.systemRed) : Color.primary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .padding(.horizontal, 12)
+                .background(Color(.tertiarySystemFill), in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct AnimatedGIFView: UIViewRepresentable {
+    let assetName: String
+
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.backgroundColor = .clear
+        webView.scrollView.isScrollEnabled = false
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
+        webView.isUserInteractionEnabled = false
+        loadGIF(in: webView, coordinator: context.coordinator)
+        return webView
+    }
+
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        if context.coordinator.loadedAssetName != assetName {
+            loadGIF(in: webView, coordinator: context.coordinator)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    private func loadGIF(in webView: WKWebView, coordinator: Coordinator? = nil) {
+        guard let data = NSDataAsset(name: assetName)?.data else { return }
+
+        let base64GIF = data.base64EncodedString()
+        let html = """
+        <!doctype html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            html, body {
+              margin: 0;
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              background: transparent;
+            }
+            img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+              display: block;
+            }
+          </style>
+        </head>
+        <body>
+          <img src="data:image/gif;base64,\(base64GIF)" alt="">
+        </body>
+        </html>
+        """
+
+        coordinator?.loadedAssetName = assetName
+        webView.loadHTMLString(html, baseURL: nil)
+    }
+
+    final class Coordinator {
+        var loadedAssetName: String?
     }
 }
 

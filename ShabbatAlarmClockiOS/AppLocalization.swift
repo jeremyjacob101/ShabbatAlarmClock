@@ -222,6 +222,13 @@ struct AppStrings {
     var notificationPermissionMessage: String { localized("alerts.notifications.message") }
     var ringerReminderTitle: String { localized("alerts.ringer.title") }
     var ringerReminderMessage: String { localized("alerts.ringer.message") }
+    var ringerReminderBody: String { localized("alerts.ringer.body") }
+    var ringerReminderDoNotDisturbTitle: String {
+        localized("alerts.ringer.do_not_disturb.title")
+    }
+    var ringerReminderDoNotDisturbMessage: String {
+        localized("alerts.ringer.do_not_disturb.message")
+    }
     var notificationPermissionRequestFailed: String {
         localized("alerts.notifications.request_failed")
     }

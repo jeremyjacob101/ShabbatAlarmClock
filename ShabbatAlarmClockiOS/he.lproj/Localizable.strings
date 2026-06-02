@@ -67,8 +67,11 @@
 "alerts.notifications.enable_failed" = "לא ניתן היה להפעיל את השעון המעורר כי לא ניתן היה לבקש הרשאת התראות. בדקו את ההגדרות ונסו שוב.";
 "alerts.notifications.schedule_failed" = "לא ניתן היה לתזמן את השעון המעורר. בדקו את הגדרות ההתראות ונסו שוב.";
 
-"alerts.ringer.title" = "הצלצול חייב להיות פעיל";
-"alerts.ringer.message" = "הפעילו את הצלצול כדי לשמוע את השעון המעורר הזה.";
+"alerts.ringer.title" = "צלצול";
+"alerts.ringer.body" = "הפעילו את הצלצול כדי לשמוע את השעון המעורר הזה.";
+"alerts.ringer.do_not_disturb.title" = "נא לא להפריע";
+"alerts.ringer.do_not_disturb.message" = "אפשרו את האפליקציה בהגדרות 'נא לא להפריע'.";
+"alerts.ringer.message" = "הפעילו את הצלצול כדי לשמוע את שעון הבדיקה.";
 
 "errors.notifications.not_authorized" = "ההתראות לא מורשות. הפעילו אותן בהגדרות.";
 "errors.notifications.invalid_trigger_date" = "לא ניתן לקבוע את הזמן הבא לשעון המעורר הזה.";

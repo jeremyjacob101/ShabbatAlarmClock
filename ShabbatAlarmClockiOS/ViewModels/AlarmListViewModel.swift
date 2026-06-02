@@ -344,7 +344,6 @@ final class AlarmListViewModel: ObservableObject {
     private func presentRingerReminderIfNeeded() {
         guard reminderPreferences.shouldShowSaveReminder else { return }
 
-        reminderPreferences.markSaveReminderShown()
         enqueueAlert(AlertItem(kind: .ringerReminder))
     }
 

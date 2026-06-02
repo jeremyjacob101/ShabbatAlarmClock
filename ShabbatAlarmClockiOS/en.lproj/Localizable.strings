@@ -67,8 +67,11 @@
 "alerts.notifications.enable_failed" = "Couldn’t enable the alarm because notification permission couldn’t be requested. Check Settings and try again.";
 "alerts.notifications.schedule_failed" = "Couldn’t schedule the alarm. Check notification settings and try again.";
 
-"alerts.ringer.title" = "Ringer Must Be On";
-"alerts.ringer.message" = "Turn on ringer to hear this alarm.";
+"alerts.ringer.title" = "Ringer";
+"alerts.ringer.body" = "Turn on ringer to hear this alarm.";
+"alerts.ringer.do_not_disturb.title" = "Do Not Disturb";
+"alerts.ringer.do_not_disturb.message" = "Allow this app in DND settings.";
+"alerts.ringer.message" = "Turn ringer on to hear test alarm.";
 
 "errors.notifications.not_authorized" = "Notifications are not authorized. Please enable them in Settings.";
 "errors.notifications.invalid_trigger_date" = "Couldn’t determine the next time for this alarm.";
