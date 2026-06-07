@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Shabbat Alarm Clock</string>
+
+    <string name="alarm_default_label">שעון מעורר</string>
+    <string name="alarm_add">הוספת שעון מעורר</string>
+    <string name="alarm_delete">מחקו שעון מעורר</string>
+    <string name="alarm_edit_title">עריכת שעון מעורר</string>
+    <string name="alarm_new_title">שעון מעורר חדש</string>
+
+    <string name="alarms_title">שעוני מעורר</string>
+    <string name="alarms_empty_title">עדיין אין שעוני מעורר</string>
+    <string name="alarms_empty_message">הקישו על + כדי ליצור את השעון המעורר הראשון.</string>
+
+    <string name="settings_title">הגדרות</string>
+    <string name="settings_notifications_enable">הפעלת התראות</string>
+    <string name="settings_notifications_manage">הגדרות התראות</string>
+    <string name="settings_app_color">צבע האפליקציה</string>
+    <string name="settings_language">שפה</string>
+    <string name="settings_language_option_system">ברירת המחדל של המערכת</string>
+    <string name="settings_language_option_english">אנגלית</string>
+    <string name="settings_language_option_hebrew">עברית</string>
+    <string name="settings_leave_rating">דרגו את האפליקציה</string>
+    <string name="settings_contact">יצירת קשר</string>
+
+    <string name="notice_title">הודעה</string>
+    <string name="button_open_settings">פתחו הגדרות</string>
+    <string name="button_allow">אפשרו</string>
+    <string name="button_not_now">לא עכשיו</string>
+    <string name="button_cancel">ביטול</string>
+    <string name="button_save">שמירה</string>
+    <string name="button_ok">אישור</string>
+
+    <string name="schedule_section">תזמון</string>
+    <string name="schedule_day_of_week">יום בשבוע</string>
+    <string name="schedule_time">שעת השעון המעורר</string>
+    <string name="schedule_hour">שעה</string>
+    <string name="schedule_minute">דקה</string>
+
+    <string name="repeat_section">חזרה</string>
+    <string name="repeat_every_week">חזרה כל שבוע</string>
+    <string name="repeat_once">חד־פעמי</string>
+    <string name="repeat_auto_snooze_five_minutes">נודניק אוטומטי ל־5 דקות</string>
+
+    <string name="sound_section">צליל</string>
+    <string name="sound_alarm">צליל השעון המעורר</string>
+    <string name="sound_length">משך צליל השעון המעורר</string>
+    <string name="sound_noise_level">עוצמת רעש</string>
+    <string name="sound_noise_level_soft">רגוע</string>
+    <string name="sound_noise_level_loud">חזק</string>
+    <string name="sound_test">בדיקת צליל</string>
+    <string name="sound_stop">עצירת צליל</string>
+    <string name="sound_name_chimes">פעמונים</string>
+    <string name="sound_name_alarm">שעון מעורר</string>
+    <string name="sound_name_harp">נבל</string>
+
+    <string name="label_section">תווית</string>
+
+    <string name="alerts_notifications_title">הפעלת התראות</string>
+    <string name="alerts_notifications_message">Shabbat Alarm Clock משתמשת בהתראות כדי להפעיל שעוני מעורר בזמן שנקבע. הפעילו התראות עכשיו כדי שהשעוני המעורר יצלצלו.</string>
+    <string name="alerts_notifications_request_failed">לא ניתן היה לבקש הרשאת התראות. בדקו את ההגדרות ונסו שוב.</string>
+    <string name="alerts_notifications_not_allowed">לא אושרו התראות. עדיין אפשר לשמור שעוני מעורר, אבל הם לא יצלצלו עד שההתראות יופעלו.</string>
+    <string name="alerts_notifications_saved_but_disabled">השעון המעורר נשמר, אבל ההתראות לא מופעלות. הפעילו אותן בהגדרות כדי להפעיל שעוני מעורר.</string>
+    <string name="alerts_notifications_saved_but_request_failed">השעון המעורר נשמר, אבל לא ניתן היה לבקש הרשאת התראות. בדקו את ההגדרות כדי להפעיל שעוני מעורר.</string>
+    <string name="alerts_notifications_disabled_for_enable">ההתראות לא מופעלות. הפעילו אותן בהגדרות כדי להפעיל שעוני מעורר.</string>
+    <string name="alerts_notifications_enable_failed">לא ניתן היה להפעיל את השעון המעורר כי לא ניתן היה לבקש הרשאת התראות. בדקו את ההגדרות ונסו שוב.</string>
+    <string name="alerts_notifications_schedule_failed">לא ניתן היה לתזמן את השעון המעורר. בדקו את הגדרות ההתראות ונסו שוב.</string>
+
+    <string name="theme_standard">רגיל</string>
+    <string name="theme_blue">כחול</string>
+    <string name="theme_teal">טורקיז</string>
+    <string name="theme_green">ירוק</string>
+    <string name="theme_mint">מנטה</string>
+    <string name="theme_orange">כתום</string>
+    <string name="theme_rose">ורוד</string>
+    <string name="theme_red">אדום</string>
+    <string name="theme_lavender">לבנדר</string>
+
+    <string name="duration_short">%1$d שנ׳</string>
+    <string name="notification_body">%1$s בשעה %2$s</string>
+    <string name="notification_channel_alarms">שעוני מעורר</string>
+    <string name="notification_channel_alarms_description">התראות שעון מעורר שבת מתוזמנות</string>
+    <string name="contact_email_subject">[יצירת קשר] Shabbat Alarm Clock</string>
+
+    <string-array name="weekday_names">
+        <item>יום ראשון</item>
+        <item>יום שני</item>
+        <item>יום שלישי</item>
+        <item>יום רביעי</item>
+        <item>יום חמישי</item>
+        <item>יום שישי</item>
+        <item>שבת</item>
+    </string-array>
+</resources>

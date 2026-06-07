@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Shabbat Alarm Clock</string>
+
+    <string name="alarm_default_label">Alarm</string>
+    <string name="alarm_add">Add alarm</string>
+    <string name="alarm_delete">Delete Alarm</string>
+    <string name="alarm_edit_title">Edit Alarm</string>
+    <string name="alarm_new_title">New Alarm</string>
+
+    <string name="alarms_title">Alarms</string>
+    <string name="alarms_empty_title">No Alarms Yet</string>
+    <string name="alarms_empty_message">Tap + to create your first alarm.</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_notifications_enable">Enable Notifications</string>
+    <string name="settings_notifications_manage">Notification Settings</string>
+    <string name="settings_app_color">App Color</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_option_system">System Default</string>
+    <string name="settings_language_option_english">English</string>
+    <string name="settings_language_option_hebrew">Hebrew</string>
+    <string name="settings_leave_rating">Leave a Rating</string>
+    <string name="settings_contact">Contact</string>
+
+    <string name="notice_title">Notice</string>
+    <string name="button_open_settings">Open Settings</string>
+    <string name="button_allow">Allow</string>
+    <string name="button_not_now">Not Now</string>
+    <string name="button_cancel">Cancel</string>
+    <string name="button_save">Save</string>
+    <string name="button_ok">OK</string>
+
+    <string name="schedule_section">Schedule</string>
+    <string name="schedule_day_of_week">Day of Week</string>
+    <string name="schedule_time">Alarm Time</string>
+    <string name="schedule_hour">Hour</string>
+    <string name="schedule_minute">Minute</string>
+
+    <string name="repeat_section">Repeat</string>
+    <string name="repeat_every_week">Repeat every week</string>
+    <string name="repeat_once">One time</string>
+    <string name="repeat_auto_snooze_five_minutes">Auto-snooze for 5 minutes</string>
+
+    <string name="sound_section">Sound</string>
+    <string name="sound_alarm">Alarm Sound</string>
+    <string name="sound_length">Alarm Sound Length</string>
+    <string name="sound_noise_level">Noise Level</string>
+    <string name="sound_noise_level_soft">Soft</string>
+    <string name="sound_noise_level_loud">Loud</string>
+    <string name="sound_test">Test Sound</string>
+    <string name="sound_stop">Stop Sound</string>
+    <string name="sound_name_chimes">Chimes</string>
+    <string name="sound_name_alarm">Alarm</string>
+    <string name="sound_name_harp">Harp</string>
+
+    <string name="label_section">Label</string>
+
+    <string name="alerts_notifications_title">Enable Notifications</string>
+    <string name="alerts_notifications_message">Shabbat Alarm Clock uses notifications to deliver alarms at the scheduled time. Enable notifications now so your alarms can ring.</string>
+    <string name="alerts_notifications_request_failed">Failed to request notification permission. Check Settings and try again.</string>
+    <string name="alerts_notifications_not_allowed">Notifications were not allowed. You can still save alarms, but they will not ring until notifications are enabled.</string>
+    <string name="alerts_notifications_saved_but_disabled">Alarm saved, but notifications are not enabled. Turn them on in Settings to activate alarms.</string>
+    <string name="alerts_notifications_saved_but_request_failed">Alarm saved, but notification permission could not be requested. Check Settings to activate alarms.</string>
+    <string name="alerts_notifications_disabled_for_enable">Notifications are not enabled. Turn them on in Settings to activate alarms.</string>
+    <string name="alerts_notifications_enable_failed">Could not enable the alarm because notification permission could not be requested. Check Settings and try again.</string>
+    <string name="alerts_notifications_schedule_failed">Could not schedule the alarm. Check notification settings and try again.</string>
+
+    <string name="theme_standard">Standard</string>
+    <string name="theme_blue">Blue</string>
+    <string name="theme_teal">Teal</string>
+    <string name="theme_green">Green</string>
+    <string name="theme_mint">Mint</string>
+    <string name="theme_orange">Orange</string>
+    <string name="theme_rose">Rose</string>
+    <string name="theme_red">Red</string>
+    <string name="theme_lavender">Lavender</string>
+
+    <string name="duration_short">%1$ds</string>
+    <string name="notification_body">It is %1$s at %2$s</string>
+    <string name="notification_channel_alarms">Alarms</string>
+    <string name="notification_channel_alarms_description">Scheduled Shabbat alarm notifications</string>
+    <string name="contact_email_subject">[CONTACT] Shabbat Alarm Clock</string>
+
+    <string-array name="weekday_names">
+        <item>Sunday</item>
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+    </string-array>
+</resources>
