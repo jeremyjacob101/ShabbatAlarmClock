@@ -5,7 +5,7 @@
 <h1 align="center">Shabbat Alarm Clock</h1>
 
 <p align="center">
-  A sleek, self-muting iOS alarm app built around the weekly rhythm of Shabbat.
+  A sleek, self-muting alarm app built around the weekly rhythm of Shabbat.
 </p>
 
 <p align="center">
@@ -31,7 +31,7 @@
 
 ## Overview
 
-Shabbat Alarm Clock is a focused SwiftUI iPhone app for creating and managing Shabbat-oriented alarms without the overhead of accounts, cloud sync, or complicated setup. It is designed around a weekly cadence instead of a generic daily alarm workflow.
+Shabbat Alarm Clock is a focused alarm app for creating and managing Shabbat-oriented alarms without the overhead of accounts, cloud sync, or complicated setup. The current working app is the native SwiftUI iPhone version; an Android Kotlin build brief is included for a future native Android version.
 
 The app lets people create alarms for a chosen weekday, decide whether they should repeat every week or fire only once, customize the sound and playback length, and manage everything in either English or Hebrew. It also handles right-to-left layout, theme color selection, and local notification scheduling directly on device.
 
@@ -54,7 +54,7 @@ This project keeps the scope intentionally tight: make alarms easy to create, ea
 - Weekly alarms tied to a specific day of the week.
 - Optional one-time alarms that automatically disable themselves after their scheduled fire date passes.
 - Three bundled sounds: `chimes`, `alarm`, and `harp`.
-- Adjustable sound lengths with supported durations of `5`, `10`, `15`, and `20` seconds.
+- Adjustable sound lengths with supported durations of `10`, `20`, `30`, `40`, `50`, and `60` seconds.
 - In-app sound preview before saving an alarm.
 - English and Hebrew localization.
 - Full right-to-left layout support for Hebrew.
@@ -90,7 +90,7 @@ This project keeps the scope intentionally tight: make alarms easy to create, ea
 
 ### Xcode
 
-1. Open `ShabbatAlarmClockiOS.xcodeproj` in Xcode.
+1. Open `Codebase - ShabbatAlarmClock iOS/ShabbatAlarmClockiOS.xcodeproj` in Xcode.
 2. Select the `ShabbatAlarmClockiOS` scheme.
 3. Choose an iPhone simulator or connected device.
 4. Press `Run`.
@@ -99,7 +99,7 @@ This project keeps the scope intentionally tight: make alarms easy to create, ea
 ### Command Line
 
 ```bash
-xcodebuild -project ShabbatAlarmClockiOS.xcodeproj \
+xcodebuild -project "Codebase - ShabbatAlarmClock iOS/ShabbatAlarmClockiOS.xcodeproj" \
   -scheme ShabbatAlarmClockiOS \
   -configuration Debug \
   -destination 'generic/platform=iOS' \
@@ -112,28 +112,37 @@ xcodebuild -project ShabbatAlarmClockiOS.xcodeproj \
 <summary><strong>Structure</strong></summary>
 
 ```text
-ShabbatAlarmClockiOS/
-├── Models/          Alarm data and bundled sound definitions
-├── Persistence/     Local storage and reminder preference state
-├── Services/        Notification scheduling and sound preview playback
-├── Utilities/       Date formatting and keyboard-dismiss helpers
-├── ViewModels/      App state and alarm management logic
-├── Views/           SwiftUI screens and reusable UI components
-├── en.lproj/        English strings
-├── he.lproj/        Hebrew strings
-└── Assets.xcassets/ App icon and color assets
+Codebase - ShabbatAlarmClock iOS/
+├── ShabbatAlarmClockiOS.xcodeproj/
+└── ShabbatAlarmClockiOS/
+    ├── Models/          Alarm data and bundled sound definitions
+    ├── Persistence/     Local storage and reminder preference state
+    ├── Services/        Notification scheduling and sound preview playback
+    ├── Utilities/       Date formatting and keyboard-dismiss helpers
+    ├── ViewModels/      App state and alarm management logic
+    ├── Views/           SwiftUI screens and reusable UI components
+    ├── en.lproj/        English strings
+    ├── he.lproj/        Hebrew strings
+    └── Assets.xcassets/ App icon and color assets
 ```
 
 </details>
 
+### Repository Layout
+
+- `Codebase - ShabbatAlarmClock iOS/` contains the current SwiftUI iOS app and Xcode project.
+- `Codebase - ShabbatAlarmClock Android/kotlin.md` contains the native Kotlin Android implementation brief for a future build.
+- `docs/` contains shared README images and project media.
+- `README.md` and `LICENSE.md` stay at the repository root as shared project documentation.
+
 ### Key Files
 
-- `ShabbatAlarmClockiOS/Views/AlarmListView.swift` drives the main alarm list, settings menu, add flow, and edit flow.
-- `ShabbatAlarmClockiOS/Views/AddAlarmView.swift` handles alarm creation, sound testing, weekday selection, repeat settings, and deletion.
-- `ShabbatAlarmClockiOS/ViewModels/AlarmListViewModel.swift` owns alarm CRUD, notification permission state, and notification refresh behavior.
-- `ShabbatAlarmClockiOS/Services/NotificationServiceError.swift` contains the notification scheduling service and alert deduplication logic.
-- `ShabbatAlarmClockiOS/AppLocalization.swift` powers English/Hebrew switching and right-to-left layout handling.
-- `ShabbatAlarmClockiOS/AppTheme.swift` defines the app's selectable accent colors.
+- `Codebase - ShabbatAlarmClock iOS/ShabbatAlarmClockiOS/Views/AlarmListView.swift` drives the main alarm list, settings menu, add flow, and edit flow.
+- `Codebase - ShabbatAlarmClock iOS/ShabbatAlarmClockiOS/Views/AddAlarmView.swift` handles alarm creation, sound testing, weekday selection, repeat settings, and deletion.
+- `Codebase - ShabbatAlarmClock iOS/ShabbatAlarmClockiOS/ViewModels/AlarmListViewModel.swift` owns alarm CRUD, notification permission state, and notification refresh behavior.
+- `Codebase - ShabbatAlarmClock iOS/ShabbatAlarmClockiOS/Services/NotificationServiceError.swift` contains the notification scheduling service and alert deduplication logic.
+- `Codebase - ShabbatAlarmClock iOS/ShabbatAlarmClockiOS/AppLocalization.swift` powers English/Hebrew switching and right-to-left layout handling.
+- `Codebase - ShabbatAlarmClock iOS/ShabbatAlarmClockiOS/AppTheme.swift` defines the app's selectable accent colors.
 
 ## Assets For This README
 
