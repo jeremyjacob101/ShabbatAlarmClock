@@ -163,4 +163,4 @@ The README now has a dedicated asset area in `docs/images/`.
 
 ## License
 
-This project is available under the [MIT License](LICENSE.md).
+This project is available under the [MIT License](LICENSE.md)
