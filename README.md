@@ -37,7 +37,7 @@ The app lets people create alarms for a chosen weekday, decide whether they shou
 
 ## Why This Exists
 
-Built-in alarm apps are great at "every weekday at 7:00 AM."
+Built-in alarm apps are great for "every weekday at 7:00 AM."
 
 They are usually less thoughtful about:
 
