@@ -5,9 +5,11 @@ import Foundation
 final class AlarmSoundPreviewPlayer: NSObject, AVAudioPlayerDelegate {
     static let shared = AlarmSoundPreviewPlayer()
 
+    private let audioSession = AVAudioSession.sharedInstance()
     private var currentPlayer: AVAudioPlayer?
     private var pendingSegmentURLs: [URL] = []
     private var currentPlaybackToken = UUID()
+    private var currentSegmentRecoveryAttempts = 0
     private var completionHandler: (() -> Void)?
 
     private override init() { }
@@ -19,6 +21,13 @@ final class AlarmSoundPreviewPlayer: NSObject, AVAudioPlayerDelegate {
         onCompletion: @escaping () -> Void
     ) {
         stop()
+
+        do {
+            try configureAudioSession()
+        } catch {
+            onCompletion()
+            return
+        }
 
         let segments = Alarm.notificationSoundSegments(for: durationSeconds)
         let segmentURLs = segments.compactMap { segment in
@@ -43,7 +52,7 @@ final class AlarmSoundPreviewPlayer: NSObject, AVAudioPlayerDelegate {
 
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         Task { @MainActor [weak self] in
-            self?.playNextSegmentOrFinish()
+            self?.handlePlayerFinished(player, successfully: flag)
         }
     }
 
@@ -57,12 +66,18 @@ final class AlarmSoundPreviewPlayer: NSObject, AVAudioPlayerDelegate {
         finishPlayback(notifyCompletion: false)
     }
 
+    private func configureAudioSession() throws {
+        try audioSession.setCategory(.soloAmbient, mode: .default)
+        try audioSession.setActive(true)
+    }
+
     private func playSegment(at url: URL, playbackToken: UUID) {
         do {
             let player = try AVAudioPlayer(contentsOf: url)
             player.delegate = self
             player.prepareToPlay()
             currentPlayer = player
+            currentSegmentRecoveryAttempts = 0
 
             guard currentPlaybackToken == playbackToken, player.play() else {
                 finishPlayback(notifyCompletion: true)
@@ -71,6 +86,22 @@ final class AlarmSoundPreviewPlayer: NSObject, AVAudioPlayerDelegate {
         } catch {
             finishPlayback(notifyCompletion: true)
         }
+    }
+
+    private func handlePlayerFinished(_ player: AVAudioPlayer, successfully flag: Bool) {
+        guard player === currentPlayer else { return }
+
+        if !flag,
+           currentSegmentRecoveryAttempts < 1,
+           player.currentTime + 0.5 < player.duration {
+            currentSegmentRecoveryAttempts += 1
+            player.prepareToPlay()
+            if player.play() {
+                return
+            }
+        }
+
+        playNextSegmentOrFinish()
     }
 
     private func playNextSegmentOrFinish() {
@@ -90,12 +121,14 @@ final class AlarmSoundPreviewPlayer: NSObject, AVAudioPlayerDelegate {
         let callback = notifyCompletion ? completionHandler : nil
         completionHandler = nil
         currentPlaybackToken = UUID()
+        currentSegmentRecoveryAttempts = 0
         pendingSegmentURLs.removeAll()
 
         currentPlayer?.stop()
         currentPlayer?.delegate = nil
         currentPlayer = nil
 
+        try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
         callback?()
     }
 }

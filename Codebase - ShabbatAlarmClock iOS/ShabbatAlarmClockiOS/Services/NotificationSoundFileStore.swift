@@ -17,6 +17,7 @@ struct NotificationSoundFileStore {
             at: destinationDirectory,
             withIntermediateDirectories: true
         )
+        try disableFileProtection(at: destinationDirectory)
 
         let destinationURL = destinationDirectory.appendingPathComponent(
             fileName,
@@ -30,6 +31,7 @@ struct NotificationSoundFileStore {
 
             try fileManager.copyItem(at: sourceURL, to: destinationURL)
         }
+        try disableFileProtection(at: destinationURL)
 
         return fileName
     }
@@ -66,5 +68,14 @@ struct NotificationSoundFileStore {
         }
 
         return sourceData == destinationData
+    }
+
+    private func disableFileProtection(at url: URL) throws {
+#if os(iOS)
+        try fileManager.setAttributes(
+            [.protectionKey: FileProtectionType.none],
+            ofItemAtPath: url.path
+        )
+#endif
     }
 }
