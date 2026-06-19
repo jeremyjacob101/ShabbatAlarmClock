@@ -1,9 +1,14 @@
 import SwiftUI
+import UserNotifications
 
 @main
 struct ShabbatAlarmClockiOSApp: App {
     @AppStorage(AppTheme.storageKey) private var storedTheme = AppTheme.defaultTheme.rawValue
     @StateObject private var localization = AppLocalizationController()
+
+    init() {
+        UNUserNotificationCenter.current().delegate = AlarmNotificationPresentationDelegate.shared
+    }
 
     private var currentTheme: AppTheme {
         AppTheme.resolve(storedValue: storedTheme)

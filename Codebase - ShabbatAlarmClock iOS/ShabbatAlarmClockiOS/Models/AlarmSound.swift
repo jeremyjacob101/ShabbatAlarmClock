@@ -51,11 +51,7 @@ enum AlarmSound: String, CaseIterable, Codable, Identifiable {
             return nil
         }
 
-        let fileName = "\(resource).wav"
-        return notificationSoundName(
-            resource: resource,
-            fileName: fileName
-        )
+        return "\(resource).wav"
     }
 
     private func resolvedResourceName(
@@ -85,25 +81,6 @@ enum AlarmSound: String, CaseIterable, Codable, Identifiable {
             forResource: resource,
             withExtension: "wav"
         )
-    }
-
-    private func notificationSoundName(resource: String, fileName: String) -> String? {
-        if Bundle.main.url(
-            forResource: resource,
-            withExtension: "wav",
-            subdirectory: Self.soundDirectory
-        ) != nil {
-            return "\(Self.soundDirectory)/\(fileName)"
-        }
-
-        if Bundle.main.url(
-            forResource: resource,
-            withExtension: "wav"
-        ) != nil {
-            return fileName
-        }
-
-        return nil
     }
 
     init(from decoder: Decoder) throws {

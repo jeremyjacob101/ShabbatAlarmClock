@@ -4,6 +4,7 @@ import UserNotifications
 enum NotificationServiceError: LocalizedError {
     case notAuthorized
     case invalidTriggerDate
+    case soundUnavailable
 
     var errorDescription: String? {
         let strings = AppStrings.current
@@ -13,6 +14,8 @@ enum NotificationServiceError: LocalizedError {
             return strings.notificationNotAuthorizedError
         case .invalidTriggerDate:
             return strings.invalidTriggerDateError
+        case .soundUnavailable:
+            return strings.notificationSoundUnavailableError
         }
     }
 }
@@ -71,9 +74,14 @@ final class NotificationService {
     }
 
     private let center = UNUserNotificationCenter.current()
+    private let notificationSoundStore: NotificationSoundFileStore
     private static let managedNotificationKey = "managedAlarmNotification"
     private static let weeklyIdentifierPrefix = "weekly-"
     private static let onceIdentifierPrefix = "once-"
+
+    init(notificationSoundStore: NotificationSoundFileStore = .shared) {
+        self.notificationSoundStore = notificationSoundStore
+    }
 
     func authorizationStatus() async -> UNAuthorizationStatus {
         let settings = await notificationSettings()
@@ -107,24 +115,34 @@ final class NotificationService {
     }
 
     func replaceScheduledNotifications(for alarms: [Alarm], knownAlarmIDs: [UUID]) async throws {
-        let identifiersToRemove = await managedNotificationIdentifiers(knownAlarmIDs: knownAlarmIDs)
-        if !identifiersToRemove.isEmpty {
-            center.removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
-        }
-
         let enabledAlarms = alarms.filter(\.isEnabled)
-        guard !enabledAlarms.isEmpty else { return }
+        let managedIdentifiers = await managedNotificationIdentifiers(knownAlarmIDs: knownAlarmIDs)
+        guard !enabledAlarms.isEmpty else {
+            if !managedIdentifiers.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: managedIdentifiers)
+            }
+            return
+        }
 
         let status = await authorizationStatus()
         guard status == .authorized || status == .provisional else {
+            if !managedIdentifiers.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: managedIdentifiers)
+            }
             throw NotificationServiceError.notAuthorized
         }
 
         let requests = try notificationRequests(for: enabledAlarms)
+        let requestIdentifiers = Set(requests.map(\.identifier))
 
         for request in requests {
             try Task.checkCancellation()
             try await add(request: request)
+        }
+
+        let staleIdentifiers = managedIdentifiers.filter { !requestIdentifiers.contains($0) }
+        if !staleIdentifiers.isEmpty {
+            center.removePendingNotificationRequests(withIdentifiers: staleIdentifiers)
         }
     }
 
@@ -196,7 +214,7 @@ final class NotificationService {
         for key in weeklyRepresentatives.keys.sorted() {
             guard let candidate = weeklyRepresentatives[key] else { continue }
             requests.append(
-                weeklyRequest(
+                try weeklyRequest(
                     for: candidate.alarm,
                     key: key,
                     fireDate: candidate.fireDate,
@@ -211,7 +229,7 @@ final class NotificationService {
             guard !weeklyTimes.contains(key.weekdayTime) else { continue }
             guard let candidate = onceRepresentatives[key] else { continue }
             requests.append(
-                oneTimeRequest(
+                try oneTimeRequest(
                     for: candidate.alarm,
                     fireDate: candidate.fireDate,
                     identifier: key.identifier,
@@ -232,7 +250,7 @@ final class NotificationService {
         displayedOccurrenceDate: Date,
         segmentDurationSeconds: Int,
         strings: AppStrings
-    ) -> UNNotificationRequest {
+    ) throws -> UNNotificationRequest {
         var components = DateComponents()
         components.weekday = key.time.weekday
         components.hour = key.time.hour
@@ -243,7 +261,7 @@ final class NotificationService {
 
         return UNNotificationRequest(
             identifier: key.identifier,
-            content: notificationContent(
+            content: try notificationContent(
                 for: alarm,
                 displayedOccurrenceDate: displayedOccurrenceDate,
                 segmentDurationSeconds: segmentDurationSeconds,
@@ -263,7 +281,7 @@ final class NotificationService {
         displayedOccurrenceDate: Date,
         segmentDurationSeconds: Int,
         strings: AppStrings
-    ) -> UNNotificationRequest {
+    ) throws -> UNNotificationRequest {
         let calendar = Calendar.current
         var components = calendar.dateComponents(
             [.year, .month, .day, .hour, .minute, .second],
@@ -274,7 +292,7 @@ final class NotificationService {
 
         return UNNotificationRequest(
             identifier: identifier,
-            content: notificationContent(
+            content: try notificationContent(
                 for: alarm,
                 displayedOccurrenceDate: displayedOccurrenceDate,
                 segmentDurationSeconds: segmentDurationSeconds,
@@ -292,7 +310,7 @@ final class NotificationService {
         displayedOccurrenceDate: Date,
         segmentDurationSeconds: Int,
         strings: AppStrings
-    ) -> UNMutableNotificationContent {
+    ) throws -> UNMutableNotificationContent {
         let calendar = Calendar.current
         let content = UNMutableNotificationContent()
         content.title = strings.displayedAlarmLabel(alarm.label)
@@ -305,18 +323,37 @@ final class NotificationService {
         )
         content.userInfo[Self.managedNotificationKey] = true
 
-        if let customSoundName = alarm.sound.notificationSoundName(
-            durationSeconds: segmentDurationSeconds,
-            noiseLevel: alarm.soundNoiseLevel
-        ) {
-            content.sound = UNNotificationSound(
-                named: UNNotificationSoundName(rawValue: customSoundName)
-            )
-        } else {
-            content.sound = .default
-        }
+        let customSoundName = try notificationSoundName(
+            for: alarm,
+            segmentDurationSeconds: segmentDurationSeconds
+        )
+        content.sound = UNNotificationSound(
+            named: UNNotificationSoundName(rawValue: customSoundName)
+        )
 
         return content
+    }
+
+    private func notificationSoundName(
+        for alarm: Alarm,
+        segmentDurationSeconds: Int
+    ) throws -> String {
+        guard let sourceURL = alarm.sound.bundledFileURL(
+            durationSeconds: segmentDurationSeconds,
+            noiseLevel: alarm.soundNoiseLevel
+        ), let fileName = alarm.sound.notificationSoundName(
+            durationSeconds: segmentDurationSeconds,
+            noiseLevel: alarm.soundNoiseLevel
+        ) else {
+            throw NotificationServiceError.soundUnavailable
+        }
+
+        // iOS notification sounds are resolved by filename from Library/Sounds.
+        do {
+            return try notificationSoundStore.prepareSoundFile(from: sourceURL, fileName: fileName)
+        } catch {
+            throw NotificationServiceError.soundUnavailable
+        }
     }
 
     private func notificationRepresentativeOrdering(_ lhs: Alarm, _ rhs: Alarm) -> Bool {
@@ -395,13 +432,15 @@ final class NotificationService {
                 time: weekdayTimeSlot(for: fireDate, calendar: calendar)
             )
 
-            if representatives[key] == nil {
-                representatives[key] = NotificationCandidate(
-                    alarm: alarm,
-                    fireDate: fireDate,
-                    displayedOccurrenceDate: occurrenceDate,
-                    segmentDurationSeconds: segment.durationSeconds
-                )
+            let candidate = NotificationCandidate(
+                alarm: alarm,
+                fireDate: fireDate,
+                displayedOccurrenceDate: occurrenceDate,
+                segmentDurationSeconds: segment.durationSeconds
+            )
+
+            if shouldUseCandidate(candidate, insteadOf: representatives[key]) {
+                representatives[key] = candidate
             }
         }
     }
@@ -431,15 +470,25 @@ final class NotificationService {
                 weekdayTime: weekdayTimeSlot(for: fireDate, calendar: calendar)
             )
 
-            if representatives[key] == nil {
-                representatives[key] = NotificationCandidate(
-                    alarm: alarm,
-                    fireDate: fireDate,
-                    displayedOccurrenceDate: occurrenceDate,
-                    segmentDurationSeconds: segment.durationSeconds
-                )
+            let candidate = NotificationCandidate(
+                alarm: alarm,
+                fireDate: fireDate,
+                displayedOccurrenceDate: occurrenceDate,
+                segmentDurationSeconds: segment.durationSeconds
+            )
+
+            if shouldUseCandidate(candidate, insteadOf: representatives[key]) {
+                representatives[key] = candidate
             }
         }
+    }
+
+    private func shouldUseCandidate(
+        _ candidate: NotificationCandidate,
+        insteadOf existingCandidate: NotificationCandidate?
+    ) -> Bool {
+        guard let existingCandidate else { return true }
+        return candidate.segmentDurationSeconds > existingCandidate.segmentDurationSeconds
     }
 
     private func managedNotificationIdentifiers(knownAlarmIDs: [UUID]) async -> [String] {

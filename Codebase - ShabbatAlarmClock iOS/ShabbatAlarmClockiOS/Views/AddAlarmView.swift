@@ -573,7 +573,7 @@ struct AddAlarmView: View {
         isTestingSound = true
         soundPreviewPlayer.play(
             sound,
-            durationSeconds: Alarm.previewSoundDurationSeconds,
+            durationSeconds: soundDurationSeconds,
             noiseLevel: soundNoiseLevel
         ) {
             isTestingSound = false

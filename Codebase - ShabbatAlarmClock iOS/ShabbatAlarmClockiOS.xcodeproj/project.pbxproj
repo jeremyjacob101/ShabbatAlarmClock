@@ -7,14 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		BA48C6C32F4BD90F007C146B /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = BA48C6C12F4BD90D007C146B /* .gitignore */; };
-		BAB6E9DF2F4CADD900C5CF38 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = BAB6E9DE2F4CADD900C5CF38 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		BA48C6B12F4BD82E007C146B /* ShabbatAlarmClockiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShabbatAlarmClockiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		BA48C6C12F4BD90D007C146B /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
-		BAB6E9DE2F4CADD900C5CF38 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -39,10 +35,8 @@
 		BA48C6A82F4BD82E007C146B = {
 			isa = PBXGroup;
 			children = (
-				BAB6E9DE2F4CADD900C5CF38 /* README.md */,
 				BA48C6B32F4BD82E007C146B /* ShabbatAlarmClockiOS */,
 				BA48C6B22F4BD82E007C146B /* Products */,
-				BA48C6C12F4BD90D007C146B /* .gitignore */,
 			);
 			sourceTree = "<group>";
 		};
@@ -119,8 +113,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BAB6E9DF2F4CADD900C5CF38 /* README.md in Resources */,
-				BA48C6C32F4BD90F007C146B /* .gitignore in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -270,7 +262,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = UZ7YLA6V9D;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -285,7 +277,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.5;
+				MARKETING_VERSION = 1.4.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jj.shabbatalarmclock;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -309,7 +301,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = UZ7YLA6V9D;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -324,7 +316,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.5;
+				MARKETING_VERSION = 1.4.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jj.shabbatalarmclock;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

@@ -1,21 +1,16 @@
-import AudioToolbox
+import AVFoundation
 import Foundation
 
 @MainActor
-final class AlarmSoundPreviewPlayer {
+final class AlarmSoundPreviewPlayer: NSObject, AVAudioPlayerDelegate {
     static let shared = AlarmSoundPreviewPlayer()
 
-    private var currentSoundID: SystemSoundID?
+    private var currentPlayer: AVAudioPlayer?
+    private var pendingSegmentURLs: [URL] = []
     private var currentPlaybackToken = UUID()
     private var completionHandler: (() -> Void)?
 
-    private init() { }
-
-    deinit {
-        if let soundID = currentSoundID {
-            AudioServicesDisposeSystemSoundID(soundID)
-        }
-    }
+    private override init() { }
 
     func play(
         _ sound: AlarmSound,
@@ -25,42 +20,36 @@ final class AlarmSoundPreviewPlayer {
     ) {
         stop()
 
-        guard let url = sound.bundledFileURL(
-            durationSeconds: durationSeconds,
-            noiseLevel: noiseLevel
-        ) else {
+        let segments = Alarm.notificationSoundSegments(for: durationSeconds)
+        let segmentURLs = segments.compactMap { segment in
+            sound.bundledFileURL(
+                durationSeconds: segment.durationSeconds,
+                noiseLevel: noiseLevel
+            )
+        }
+
+        guard segmentURLs.count == segments.count,
+              let firstSegmentURL = segmentURLs.first else {
             onCompletion()
             return
         }
 
-        var soundID: SystemSoundID = 0
-        let status = AudioServicesCreateSystemSoundID(url as CFURL, &soundID)
-        guard status == kAudioServicesNoError else {
-            onCompletion()
-            return
-        }
-
-        var completePlaybackIfAppDies: UInt32 = 0
-        var mutableSoundID = soundID
-        AudioServicesSetProperty(
-            kAudioServicesPropertyCompletePlaybackIfAppDies,
-            UInt32(MemoryLayout<SystemSoundID>.size),
-            &mutableSoundID,
-            UInt32(MemoryLayout<UInt32>.size),
-            &completePlaybackIfAppDies
-        )
-
-        currentSoundID = soundID
+        pendingSegmentURLs = Array(segmentURLs.dropFirst())
         completionHandler = onCompletion
         let playbackToken = UUID()
         currentPlaybackToken = playbackToken
+        playSegment(at: firstSegmentURL, playbackToken: playbackToken)
+    }
 
-        AudioServicesPlayAlertSoundWithCompletion(soundID) { [weak self] in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                guard self.currentPlaybackToken == playbackToken else { return }
-                self.finishPlayback(notifyCompletion: true)
-            }
+    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        Task { @MainActor [weak self] in
+            self?.playNextSegmentOrFinish()
+        }
+    }
+
+    nonisolated func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        Task { @MainActor [weak self] in
+            self?.finishPlayback(notifyCompletion: true)
         }
     }
 
@@ -68,15 +57,44 @@ final class AlarmSoundPreviewPlayer {
         finishPlayback(notifyCompletion: false)
     }
 
+    private func playSegment(at url: URL, playbackToken: UUID) {
+        do {
+            let player = try AVAudioPlayer(contentsOf: url)
+            player.delegate = self
+            player.prepareToPlay()
+            currentPlayer = player
+
+            guard currentPlaybackToken == playbackToken, player.play() else {
+                finishPlayback(notifyCompletion: true)
+                return
+            }
+        } catch {
+            finishPlayback(notifyCompletion: true)
+        }
+    }
+
+    private func playNextSegmentOrFinish() {
+        currentPlayer?.delegate = nil
+        currentPlayer = nil
+
+        guard !pendingSegmentURLs.isEmpty else {
+            finishPlayback(notifyCompletion: true)
+            return
+        }
+
+        let nextSegmentURL = pendingSegmentURLs.removeFirst()
+        playSegment(at: nextSegmentURL, playbackToken: currentPlaybackToken)
+    }
+
     private func finishPlayback(notifyCompletion: Bool) {
         let callback = notifyCompletion ? completionHandler : nil
         completionHandler = nil
         currentPlaybackToken = UUID()
+        pendingSegmentURLs.removeAll()
 
-        if let soundID = currentSoundID {
-            AudioServicesDisposeSystemSoundID(soundID)
-            currentSoundID = nil
-        }
+        currentPlayer?.stop()
+        currentPlayer?.delegate = nil
+        currentPlayer = nil
 
         callback?()
     }

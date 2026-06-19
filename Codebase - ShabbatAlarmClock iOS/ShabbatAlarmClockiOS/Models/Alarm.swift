@@ -9,7 +9,6 @@ struct Alarm: Identifiable, Codable, Equatable {
     static let supportedSoundDurations = [10, 20, 30, 40, 50, 60]
     static let soundDurationRange = supportedSoundDurations.first!...supportedSoundDurations.last!
     static let defaultSoundDurationSeconds = 20
-    static let previewSoundDurationSeconds = 10
     static let autoSnoozeMinutes = 5
 
     let id: UUID
@@ -175,7 +174,7 @@ struct Alarm: Identifiable, Codable, Equatable {
 
         return calendar.date(
             byAdding: .second,
-            value: lastSegment.offsetSeconds,
+            value: lastSegment.offsetSeconds + lastSegment.durationSeconds,
             to: lastOccurrenceDate
         ) ?? lastOccurrenceDate
     }

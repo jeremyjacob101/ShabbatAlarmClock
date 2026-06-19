@@ -250,6 +250,9 @@ struct AppStrings {
         localized("errors.notifications.not_authorized")
     }
     var invalidTriggerDateError: String { localized("errors.notifications.invalid_trigger_date") }
+    var notificationSoundUnavailableError: String {
+        localized("errors.notifications.sound_unavailable")
+    }
     var contactEmailSubject: String { localized("contact.email.subject") }
 
     func languageSelectionTitle(_ selection: AppLanguageSelection) -> String {
